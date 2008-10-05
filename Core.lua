@@ -494,10 +494,9 @@ function XPBarNone:CreateXPBar()
 		end
 		-- Display Reputation Menu on Ctrl-RightClick
 		if IsControlKeyDown() and arg1 == "RightButton" then
-			self:MakeFactionMenu(XPBarNoneButton)
-			--dewdrop:Register(XPBarNoneButton, 'children', function() self:DewdropFactionsMenu() end, 'dontHook', true)
-			--dewdrop:Open(XPBarNoneButton, 'point', "LEFT", 'relativePoint', "RIGHT", 'cursorX', true, 'cursorY', true)
-			--dewdrop:Unregister(XPBarNoneButton)
+			dewdrop:Register(XPBarNoneButton, 'children', function() self:DewdropFactionsMenu() end, 'dontHook', true)
+			dewdrop:Open(XPBarNoneButton, 'point', "LEFT", 'relativePoint', "RIGHT", 'cursorX', true, 'cursorY', true)
+			dewdrop:Unregister(XPBarNoneButton)
 		end
 	end)
 	XPBarNoneButton:SetScript("OnDragStart", function ()
@@ -937,96 +936,6 @@ local function ToggleCollapse(faction, isCollapsed)
 	else
 		CollapseFactionHeader(faction)
 	end
-end
-
-function XPBarNone:MakeFactionMenu(frame)
-	local menu = {}
-	-- Header first
-	menu[#menu + 1] = {
-		text = L["Faction Listing"],
-		isTitle = true,
-		justifyH = "CENTER",
-		--notCheckable = true,
-		textHeight = 14,
-		textR = 1,
-		textG = 1,
-		textB = 1
-	}
-	for faction = 1, GetNumFactions() do
-		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,isWatched = GetFactionInfo(faction)
-		if not isHeader then
-			local repColour
-			if standing == 8 then
-				repColour = exalted
-			else
-				repColour = FACTION_BAR_COLORS[standing]
-			end
-			local standingText = _G["FACTION_STANDING_LABEL"..standing]
-			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
-			menu[#menu + 1] = {
-				text = sformat("%s (%s)", name, standingText),
-				textHeight = 12,
-				textR = repColour.r,
-				textG = repColour.g,
-				textB = repColour.b,
-				checked = isWatched,
-				func = SetWatchedFactionIndex,
-				arg1 = faction,
-				tooltipTitle = name,
-				tooltipText = tipText,
-				keepShownOnClick = true
-			}
-		else
-			local tipText, iconPath
-			if isCollapsed then
-				tipText = sformat(L["Click to expand %s faction listing"], name)
-				iconPath = "Interface\\Buttons\\UI-PlusButton-Up"
-			else
-				tipText = sformat(L["Click to collapse %s faction listing"], name)
-				iconPath = "Interface\\Buttons\\UI-MinusButton-Up"
-			end
-			menu[#menu + 1] = {
-				text = name,
-				textHeight = 14,
-				--checked = true,
-				notCheckable = true,
-				icon = iconPath,
-				justifyH = "LEFT",
-				func = ToggleCollapse,
-				arg1 = faction,
-				arg2 = isCollapsed,
-				tooltipTitle = name,
-				tooltipText = tipText,
-				keepShownOnClick = true
-			}
-		end
-	end
-	-- Add a hint as the final item
-	menu[#menu + 1] = {
-		text = L["Hint: Click to set watched faction."],
-		--notClickable = true,
-		notCheckable = true,
-		justifyH = "CENTER",
-		textR = 0,
-		textG = 1,
-		textB = 0
-	}
-	--return menu
-	self:OpenMenu(frame, menu)
-end
-
-function XPBarNone:OpenMenu(frame, menu)
-	local dropdown = self.dropdown
-	if not dropdown then
-		dropdown = CreateFrame("Frame", "XPBarNoneDropDown", nil, "UIDropDownMenuTemplate")
-		dropdown.point = "LEFT"
-		dropdown.relativePoint = "RIGHT"
-		dropdown.displayMode = "MENU"
-		self.dropdown = dropdown
-	end
-	dropdown.relativeTo = frame
-
-	EasyMenu(menu, dropdown, "cursor")
 end
 
 function XPBarNone:DewdropFactionsMenu()
