@@ -1,4 +1,4 @@
-## Interface: 20400
+## Interface: 30000
 ## Title: XPBarNone |cff7fff7f -Ace2-|r
 ## Author: phyber
 ## Notes: Lightweight XP bar using Ace2.
