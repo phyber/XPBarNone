@@ -68,4 +68,6 @@ L:RegisterTranslations("enUS", function() return {
 	["Show zero values in the various Need tags, instead of an empty string"] = true,
 	["Commify"] = true,
 	["Insert thousands separators into long numbers."] = true,
+	["Text Position"] = true,
+	["Select the position of the text on XPBarNone."] = true,
 } end)

@@ -76,6 +76,7 @@ XPBarNone:RegisterDefaults('profile', {
 	Clamp = true,
 	NeedShowZero = false,
 	Commify = false,
+	TextPosition = 50,
 })
 
 function XPBarNone:OnInitialize()
@@ -223,6 +224,21 @@ function XPBarNone:OnInitialize()
 							self.db.profile.FontOutLine = not self.db.profile.FontOutLine
 							self:SetFontOptions()
 						end,
+					},
+					textposition = {
+						name = L["Text Position"],
+						desc = L["Select the position of the text on XPBarNone."],
+						type = "range",
+						min = 0,
+						max = 100,
+						step = 1,
+						bigStep = 5,
+						get = function() return self.db.profile.TextPosition end,
+						set = function(val)
+							self.db.profile.TextPosition = val
+							self:SetTextPosition(val)
+						end,
+						isPercent = false,
 					},
 					mouseover = {
 						name = L["Mouse Over"],
@@ -552,7 +568,8 @@ function XPBarNone:CreateXPBar()
 	local XPBarNoneText = XPBarNoneButton:CreateFontString("XPBarNoneText", "OVERLAY")
 	self:SetFontOptions()
 	XPBarNoneText:SetShadowOffset(1, -1)
-	XPBarNoneText:SetPoint("CENTER", XPBarNoneFrame, "CENTER")
+	--XPBarNoneText:SetPoint("CENTER", XPBarNoneFrame, "CENTER", self.db.profile.TextPosition or 0, 0)
+	self:SetTextPosition(self.db.profile.TextPosition)
 	XPBarNoneText:SetTextColor(1,1,1,1)
 
 	-- Set frame levels
@@ -670,6 +687,13 @@ function XPBarNone:SetTexture(texture)
 	XPBarNoneA:SetStatusBarTexture(texturePath)
 	XPBarNoneR:SetStatusBarTexture(texturePath)
 	XPBarNoneB:SetStatusBarColor(0.5, 0.5, 0.5, 0.5)
+end
+
+function XPBarNone:SetTextPosition(percent)
+	local width = self.db.profile.Width
+	local xpos = floor(((width / 100) * percent) - (width / 2))
+	XPBarNoneText:ClearAllPoints()
+	XPBarNoneText:SetPoint("CENTER", XPBarNoneFrame, "CENTER", xpos or 0, 0)
 end
 
 function XPBarNone:MediaUpdate()
