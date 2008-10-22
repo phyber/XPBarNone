@@ -980,8 +980,8 @@ function XPBarNone:DewdropFactionsMenu()
 	for faction = 1, GetNumFactions() do
 		-- GetFactionInfo() returns
 		---- name, description, standingId, bottomValue, topValue, earnedValue, atWarWith,
-		---- canToggleAtWar, isHeader, isCollapsed, isWatched
-		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,isWatched = GetFactionInfo(faction)
+		---- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild
+		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,_,isWatched = GetFactionInfo(faction)
 
 		if not isHeader then
 			local repColour
