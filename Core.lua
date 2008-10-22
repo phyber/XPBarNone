@@ -776,7 +776,8 @@ end
 
 local function SetWatchedFactionName(faction)
 	for i = 1, GetNumFactions() do
-		local name,_,_,_,_,_,_,_,isHeader,_,isWatched = GetFactionInfo(i)
+		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
+		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
 
 		-- We've found our faction
 		if name == faction then
