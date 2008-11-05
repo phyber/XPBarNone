@@ -18,6 +18,11 @@ local math_mod = mod
 local tonumber = tonumber
 local tostring = tostring
 local type = type
+local UnitXP = UnitXP
+local UnitXPMax = UnitXPMax
+-- Vars for keeping last X number of XP values and averating the XP for better KTL values
+local lastXPValues = {}
+local sessionkills = 0
 
 -- Colour for the exalted rep, based on colour in the armory.
 --local exalted = { r = 0, g = 0.84, b = 0.69 }
@@ -41,6 +46,7 @@ LSM3:Register("statusbar", "Marble", "Interface\\AddOns\\XPBarNone\\Textures\\ma
 LSM3:Register("statusbar", "Otravi", "Interface\\AddOns\\XPBarNone\\Textures\\otravi")
 LSM3:Register("statusbar", "Perl", "Interface\\AddOns\\XPBarNone\\Textures\\perl")
 LSM3:Register("statusbar", "Smooth", "Interface\\AddOns\\XPBarNone\\Textures\\smooth")
+LSM3:Register("statusbar", "Smooth v2", "Interface\\AddOns\\XPBarNone\\Textures\\smoothv2")
 LSM3:Register("statusbar", "Striped", "Interface\\AddOns\\XPBarNone\\Textures\\striped")
 LSM3:Register("statusbar", "Waves", "Interface\\AddOns\\XPBarNone\\Textures\\waves")
 
@@ -738,6 +744,9 @@ function XPBarNone:UpdateXPData()
 	self.remXP = self.nXP - self.cXP
 	self.diffXP = self.cXP - prevXP
 
+	lastXPValues[math_mod(sessionkills, 10)+1] = self.diffXP
+	sessionkills = sessionkills + 1
+
 	self:UpdateXPBar()
 end
 
@@ -845,6 +854,24 @@ function XPBarNone:UpdateRepData()
 	end
 end
 
+-- Average the XP to get a more accurate kills to level number
+local function GetNumKTL()
+	local remainingXP = XPBarNone.remXP
+	local xp = 0
+	for _, v in ipairs(lastXPValues) do
+		xp = xp + v
+	end
+	local avgxp = xp / #lastXPValues
+	return ceil(remainingXP / avgxp)
+end
+--[[
+function XPBarNone:PrintKTL()
+	for _, v in ipairs(lastXPValues) do
+		self:Print(v)
+	end
+	self:Print(GetNumKTL())
+end
+]]
 -- function to replace text
 local function GetXPText(restedXP)
 	local text = XPBarNone.db.profile.XPString
@@ -866,8 +893,9 @@ local function GetXPText(restedXP)
 	text = gsub(text, "%[pLVL%]", UnitLevel("player"))
 	text = gsub(text, "%[mLVL%]", maxPlayerLevel)
 	text = gsub(text, "%[needXP%]", commify(XPBarNone.remXP))
-	local ktl = tonumber(sformat("%d", ceil(XPBarNone.remXP / XPBarNone.diffXP)))
-	if ktl <= 0 then
+	--local ktl = tonumber(sformat("%d", ceil(XPBarNone.remXP / XPBarNone.diffXP)))
+	local ktl = tonumber(sformat("%d", GetNumKTL()))
+	if ktl <= 0 or not ktl then
 		ktl = '?'
 	end
 	text = gsub(text, "%[KTL%]", commify(ktl))
