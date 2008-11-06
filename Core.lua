@@ -744,8 +744,10 @@ function XPBarNone:UpdateXPData()
 	self.remXP = self.nXP - self.cXP
 	self.diffXP = self.cXP - prevXP
 
-	lastXPValues[math_mod(sessionkills, 10)+1] = self.diffXP
-	sessionkills = sessionkills + 1
+	if self.diffXP > 0 then
+		lastXPValues[math_mod(sessionkills, 10)+1] = self.diffXP
+		sessionkills = sessionkills + 1
+	end
 
 	self:UpdateXPBar()
 end
