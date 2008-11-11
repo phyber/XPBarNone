@@ -1063,7 +1063,7 @@ function XPBarNone:DewdropFactionsMenu()
 		if not isHeader then
 			local repColour
 			if standing == 8 then
-				repColour = exalted
+				repColour = self.db.profile.exalted
 			else
 				repColour = FACTION_BAR_COLORS[standing]
 			end
