@@ -24,9 +24,6 @@ local UnitXPMax = UnitXPMax
 local lastXPValues = {}
 local sessionkills = 0
 
--- Colour for the exalted rep, based on colour in the armory.
---local exalted = { r = 0, g = 0.84, b = 0.69 }
-local exalted = { r = 0, g = 0.77, b = 0.63 }
 -- Set the maximum player level
 -- GetAccountExpansionLevel() will return the following for various expansions
 -- 0: World of Warcraft.  Max Level 60.  No Expansions installed.
@@ -54,11 +51,14 @@ XPBarNone = AceLibrary("AceAddon-2.0"):new("AceEvent-2.0", "AceDB-2.0", "AceCons
 local XPBarNone, self = XPBarNone, XPBarNone
 XPBarNone:RegisterDB("XPBarNoneDB")
 XPBarNone:RegisterDefaults('profile', {
+	-- Colours
 	rested = { r = 0, g = 0.4, b = 1 },
 	resting = { r = 1.0, g = 0.82, b = 0.25 },
 	normal = { r = 0.8, g = 0, b = 1 },
 	remaining = { r = 0.82, g = 0, b = 0 },
 	background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
+	-- Exalted colour is based on the colour from the WoW armory
+	exalted = { r = 0, g = 0.77, b = 0.63 },
 	Border = false,
 	Texture = "Smooth",
 	Width = 1028,
@@ -310,18 +310,25 @@ function XPBarNone:OnInitialize()
 							self:UpdateXPBar()
 						end,
 					},
-					backgroundcolour = {
-						name = L["Background Colour"],
-						desc = L["Set the colour of the background bar."],
-						type = "color",
-						get = function()
-							return self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a
-						end,
-						set = function(r, g, b, a)
-							self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a = r, g, b, a
-							XPBarNoneB:SetStatusBarColor(r, g, b, a)
-						end,
-						hasAlpha = true
+					col = {
+						name = L["Colours"],
+						desc = L["Set the various bar colours."],
+						type = "group",
+						args = {
+							backgroundcolour = {
+								name = L["Background Colour"],
+								desc = L["Set the colour of the background bar."],
+								type = "color",
+								get = function()
+									return self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a
+								end,
+								set = function(r, g, b, a)
+									self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a = r, g, b, a
+									XPBarNoneB:SetStatusBarColor(r, g, b, a)
+								end,
+								hasAlpha = true
+							},
+						},
 					},
 				},
 			},
@@ -429,6 +436,26 @@ function XPBarNone:OnInitialize()
 				type = "group",
 				order = 3000,
 				args = {
+					col = {
+						name = L["Colours"],
+						desc = L["Set the various bar colours."],
+						type = "group",
+						args = {
+							exalted = {
+								name = _G.FACTION_STANDING_LABEL8,
+								desc = L["Set the colour of the Exalted reputation bar."],
+								type = "color",
+								get = function()
+									return self.db.profile.exalted.r, self.db.profile.exalted.g, self.db.profile.exalted.b
+								end,
+								set = function(r, g, b)
+									self.db.profile.exalted.r, self.db.profile.exalted.g, self.db.profile.exalted.b = r, g, b
+									self:UpdateXPBar()
+								end,
+								hasAlpha = false
+							},
+						},
+					},
 					autowatch = {
 						name = L["Auto Watch Reputation"],
 						desc = L["Automatically watch the factions you gain rep with."],
@@ -863,7 +890,7 @@ function XPBarNone:UpdateRepData()
 	-- Use our own colour for exalted.
 	local repColour
 	if repStanding == 8 then
-		repColour = exalted
+		repColour = self.db.profile.exalted
 	else
 		repColour = FACTION_BAR_COLORS[repStanding]
 	end

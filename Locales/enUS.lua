@@ -72,4 +72,5 @@ L:RegisterTranslations("enUS", function() return {
 	["Select the position of the text on XPBarNone."] = true,
 	["Background Colour"] = true,
 	["Set the colour of the background bar."] = true,
+	["Set the colour of the Exalted reputation bar."] = true,
 } end)
