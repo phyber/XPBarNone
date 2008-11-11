@@ -58,6 +58,7 @@ XPBarNone:RegisterDefaults('profile', {
 	resting = { r = 1.0, g = 0.82, b = 0.25 },
 	normal = { r = 0.8, g = 0, b = 1 },
 	remaining = { r = 0.82, g = 0, b = 0 },
+	background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 }
 	Border = false,
 	Texture = "Smooth",
 	Width = 1028,
@@ -308,6 +309,19 @@ function XPBarNone:OnInitialize()
 							self:UpdateDynamicBars()
 							self:UpdateXPBar()
 						end,
+					},
+					backgroundcolour = {
+						name = L["Background Colour"],
+						desc = L["Set the colour of the background bar."],
+						type = "color",
+						get = function()
+							return self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a
+						end,
+						set = function(r, g, b, a)
+							self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a = r, g, b, a
+							XPBarNoneB:SetStatusBarColor(r, g, b, a)
+						end,
+						hasAlpha = true
 					},
 				},
 			},
@@ -692,7 +706,7 @@ function XPBarNone:SetTexture(texture)
 	XPBarNoneB:SetStatusBarTexture(texturePath)
 	XPBarNoneA:SetStatusBarTexture(texturePath)
 	XPBarNoneR:SetStatusBarTexture(texturePath)
-	XPBarNoneB:SetStatusBarColor(0.5, 0.5, 0.5, 0.5)
+	XPBarNoneB:SetStatusBarColor(self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a)
 end
 
 function XPBarNone:SetTextPosition(percent)

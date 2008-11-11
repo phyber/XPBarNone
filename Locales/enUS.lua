@@ -70,4 +70,6 @@ L:RegisterTranslations("enUS", function() return {
 	["Insert thousands separators into long numbers."] = true,
 	["Text Position"] = true,
 	["Select the position of the text on XPBarNone."] = true,
+	["Background Colour"] = true,
+	["Set the colour of the background bar."] = true,
 } end)
