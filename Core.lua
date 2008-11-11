@@ -860,7 +860,13 @@ function XPBarNone:UpdateRepData()
 	XPBarNoneA:SetMinMaxValues(min(0, repValue), repMax)
 	XPBarNoneA:SetValue(repValue)
 
-	local repColour = FACTION_BAR_COLORS[repStanding]
+	-- Use our own colour for exalted.
+	local repColour
+	if repStanding == 8 then
+		repColour = exalted
+	else
+		repColour = FACTION_BAR_COLORS[repStanding]
+	end
 	XPBarNoneA:SetStatusBarColor(repColour.r, repColour.g, repColour.b)
 
 	if not self.db.profile.HideText then
