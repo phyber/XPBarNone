@@ -58,7 +58,7 @@ XPBarNone:RegisterDefaults('profile', {
 	resting = { r = 1.0, g = 0.82, b = 0.25 },
 	normal = { r = 0.8, g = 0, b = 1 },
 	remaining = { r = 0.82, g = 0, b = 0 },
-	background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 }
+	background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
 	Border = false,
 	Texture = "Smooth",
 	Width = 1028,
