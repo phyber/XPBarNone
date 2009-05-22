@@ -16,6 +16,8 @@ The available replacements are:
 [curPC]		Your progress through the current level, displayed as a percentage.
 [needPC]	The amount of XP you need to progress to the next level.  As a percentage.
 [pLVL]		Your current level.
+[nLVL]		The next level.
+[mLVL]		Maximum level.
 [needXP]	The amount of XP remaining until you level.
 [KTL]		The amount of kills needed to level. (Can be inaccurate, for example, if you just got 10000 XP for handing a quest in)
 [BTL]		Bars/Bubbles to level.  Since some people like to announce their progress this way.
