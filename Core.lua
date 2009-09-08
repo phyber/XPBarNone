@@ -1091,7 +1091,7 @@ function XPBarNone:DrawRepMenu()
 			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
 
 			linenum = tooltip:AddLine(nil)
-			tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ")
+			tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ", NormalFont)
 			tooltip:SetCell(linenum, 2, string_format("%s%s (%s)|r", GetRepHexColour(standing), name, standingText), GameTooltipTextSmall)
 			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
 			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
