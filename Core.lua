@@ -1106,7 +1106,7 @@ function XPBarNone:DrawRepMenu()
 
 	-- Hint
 	linenum = tooltip:AddLine(nil)
-	tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", nil, "CENTER", 2)
+	tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", tooltip:GetFont(), "CENTER", 2)
 end
 
 -- Bar positioning.
