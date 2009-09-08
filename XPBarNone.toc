@@ -1,13 +1,13 @@
 ## Interface: 30200
-## Title: XPBarNone |cff7fff7f -Ace2-|r
+## Title: XPBarNone
 ## Author: phyber
-## Notes: Lightweight XP bar using Ace2.
+## Notes: Lightweight XP bar using Ace3.
 ## Version: @project-version@
 ## SavedVariables: XPBarNoneDB
-## OptionalDeps: Ace2, Dewdrop-2.0, LibSharedMedia-3.0, Waterfall-1.0
+## OptionalDeps: Ace3, LibQTip-1.0, LibSharedMedia-3.0
 ## X-Category: Interface Enhancements
 ## X-Website: http://phyber.wowinterface.com/
-## X-Embeds: Ace2, Dewdrop-2.0, LibSharedMedia-3.0, Waterfall-1.0
+## X-Embeds: Ace3, LibQTip-1.0, LibSharedMedia-3.0
 
 #@no-lib-strip@
 embeds.xml

@@ -1,40 +1,61 @@
---- Libraries
-local dewdrop = AceLibrary("Dewdrop-2.0")
+-- Addon
+XPBarNone = LibStub("AceAddon-3.0"):NewAddon("XPBarNone", "AceEvent-3.0", "AceConsole-3.0")
+local self, XPBarNone = XPBarNone, XPBarNone
+-- Libs
+local L = LibStub("AceLocale-3.0"):GetLocale("XPBarNone")
+local LQT = LibStub:GetLibrary("LibQTip-1.0")
 local LSM3 = LibStub("LibSharedMedia-3.0")
-local L = AceLibrary("AceLocale-2.2"):new("XPBarNone")
-local waterfall = AceLibrary("Waterfall-1.0")
-
--- Make some stuff local
+-- Doodads
 local _G = _G
-local sformat = string.format
-local smatch = string.match
-local string_len = string.len
-local string_gmatch = string.gmatch
-local string_reverse = string.reverse
-local gsub = string.gsub
-local ceil = math.ceil
-local floor = math.floor
-local math_mod = mod
 local tonumber = tonumber
 local tostring = tostring
 local type = type
+local ipairs = ipairs
+local select = select
+-- Strings
+local string_format = string.format
+local string_match = string.match
+local string_len = string.len
+local string_gmatch = string.gmatch
+local string_reverse = string.reverse
+local string_gsub = string.gsub
+-- Maths
+local math_ceil = math.ceil
+local math_floor = math.floor
+local math_min = math.min
+local math_mod = mod
+-- WoW Functions
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
--- Vars for keeping last X number of XP values and averating the XP for better KTL values
+local UnitLevel = UnitLevel
+local IsResting = IsResting
+local IsShiftKeyDown = IsShiftKeyDown
+local GetNumFactions = GetNumFactions
+local GetFactionInfo = GetFactionInfo
+local GetXPExhaustion = GetXPExhaustion
+local IsControlKeyDown = IsControlKeyDown
+local ExpandFactionHeader = ExpandFactionHeader
+local CollapseFactionHeader = CollapseFactionHeader
+local GetWatchedFactionInfo = GetWatchedFactionInfo
+local SetWatchedFactionIndex = SetWatchedFactionIndex
+-- Vars for averaging the kills to level
 local lastXPValues = {}
 local sessionkills = 0
+-- Rep hex colours
+local RepHexColours = {}
+-- Used to fix some weird bar switching issue :)
+local mouseovershift
+-- Rep menu tooltip
+local tooltip
 
--- Set the maximum player level
--- GetAccountExpansionLevel() will return the following for various expansions
--- 0: World of Warcraft.  Max Level 60.  No Expansions installed.
--- 1: The Burning Crusade.  Max Level 70.
--- 2: Wrath of the Lich King.  Max Level 80.  (perhaps!)
--- We then use these values to find the maximum player level by using the
--- MAX_PLAYER_LEVEL_TABLE[]
--- Thanks to cladhaire for informing me of this technique :)
+-- For finding the max player level
+-- 0: WoW Classic. Level 60
+-- 1: The Burning Cruade. Level 70
+-- 2: Wrath of the Lich King. Level 80
+-- 3: Cataclysm. Level 85 (probably)
 local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetAccountExpansionLevel()]
 
--- Register our textures.
+-- Register our textures
 LSM3:Register("statusbar", "BantoBar", "Interface\\AddOns\\XPBarNone\\Textures\\bantobar")
 LSM3:Register("statusbar", "Charcoal", "Interface\\AddOns\\XPBarNone\\Textures\\charcoal")
 LSM3:Register("statusbar", "Glaze", "Interface\\AddOns\\XPBarNone\\Textures\\glaze")
@@ -47,613 +68,520 @@ LSM3:Register("statusbar", "Smooth v2", "Interface\\AddOns\\XPBarNone\\Textures\
 LSM3:Register("statusbar", "Striped", "Interface\\AddOns\\XPBarNone\\Textures\\striped")
 LSM3:Register("statusbar", "Waves", "Interface\\AddOns\\XPBarNone\\Textures\\waves")
 
-XPBarNone = AceLibrary("AceAddon-2.0"):new("AceEvent-2.0", "AceDB-2.0", "AceConsole-2.0")
-local XPBarNone, self = XPBarNone, XPBarNone
-XPBarNone:RegisterDB("XPBarNoneDB")
-XPBarNone:RegisterDefaults('profile', {
-	-- Colours
-	rested = { r = 0, g = 0.4, b = 1 },
-	resting = { r = 1.0, g = 0.82, b = 0.25 },
-	normal = { r = 0.8, g = 0, b = 1 },
-	remaining = { r = 0.82, g = 0, b = 0 },
-	background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
-	-- Exalted colour is based on the colour from the WoW armory
-	exalted = { r = 0, g = 0.77, b = 0.63 },
-	Border = false,
-	Texture = "Smooth",
-	Width = 1028,
-	Height = 20,
-	FontSize = 14,
-	FontOutLine = false,
-	PosX = nil,
-	PosY = nil,
-	Scale = 1,
-	Strata = "HIGH",
-	HideText = false,
-	IndicateRest = true,
-	ShowRemaining = true,
-	ShowReputation = false,
-	DynamicBars = false,
-	AutoWatchRep = true,
-	MouseOver = false,
-	Locked = false,
-	Bubbles = false,
-	XPString = "Exp: [curXP]/[maxXP] ([restPC]) :: [curPC] through level [pLVL] :: [needXP] XP left :: [KTL] kills to level",
-	RepString = "Rep: [faction] ([standing]) [curRep]/[maxRep] :: [repPC]",
-	Clamp = true,
-	NeedShowZero = false,
-	Commify = false,
-	TextPosition = 50,
-})
+-- SavedVariables stored here later
+local db
 
-function XPBarNone:OnInitialize()
-	self.options = {
-		desc = L["Lightweight XP Bar."],
-		type = "group",
-		args = {
-			general = {
-				name = L["General"],
-				desc = L["General options"],
-				type = "group",
-				order = 1000,
-				args = {
-					lock = {
-						name = L["Lock"],
-						desc = L["Toggle the locking."],
-						type = "toggle",
-						get = function() return self.db.profile.Locked end,
-						set = function()
-							self.db.profile.Locked = not self.db.profile.Locked
-						end,
-					},
-					clamp = {
-						name = L["Screen Clamp"],
-						desc = L["Toggle screen clamping."],
-						type = "toggle",
-						get = function() return self.db.profile.Clamp end,
-						set = function()
-							self.db.profile.Clamp = not self.db.profile.Clamp
-							self:ToggleClamp()
-						end,
-					},
-					commify = {
-						name = L["Commify"],
-						desc = L["Insert thousands separators into long numbers."],
-						type = "toggle",
-						get = function() return self.db.profile.Commify end,
-						set = function()
-							self.db.profile.Commify = not self.db.profile.Commify
-							self:UpdateXPBar()
-						end,
-					},
-					--[[commifyseparator = {
-						name = "Commify Separator",
-						desc = "Switch between ',' or '.' as your Commify separator."
-						type = "toggle",
-						get = function() return self.db.profile.CommifySeparator end,
-						set = function()
-							self.db.profile.CommifySeparator = not self.db.profile.CommifySeparator
-							self:UpdateXPBar()
-						end,
-						map = {
-							[false] = ".",
-							[true] = ",",
-						},
-					},]]
-					border = {
-						name = L["Border"],
-						desc = L["Toggle the border."],
-						type = "toggle",
-						get = function() return self.db.profile.Border end,
-						set = function()
-							self.db.profile.Border = not self.db.profile.Border
-							self:ToggleBorder()
-						end,
-					},
-					bubbles = {
-						name = L["Bubbles"],
-						desc = L["Toggle bubbles on the XP bar."],
-						type = "toggle",
-						get = function() return self.db.profile.Bubbles end,
-						set = function()
-							self.db.profile.Bubbles = not self.db.profile.Bubbles
-							self:ToggleBubbles()
-						end,
-					},
-					scale = {
-						name = L["Scale"],
-						desc = L["Set the bar scale."],
-						type = "range",
-						min = 0.5,
-						max = 2,
-						get = function() return self.db.profile.Scale end,
-						set = function(val)
-							self:SavePosition()
-							XPBarNoneFrame:SetScale(val)
-							self.db.profile.Scale = val
-							self:RestorePosition()
-						end,
-					},
-					width = {
-						name = L["Width"],
-						desc = L["Set the bar width."],
-						type = "range",
-						min = 100,
-						max = 2000,
-						step = 1,
-						get = function() return self.db.profile.Width end,
-						set = function(val) 
-							self.db.profile.Width = val
-							XPBarNoneFrame:SetWidth(val)
-							XPBarNoneB:SetWidth(val-4)
-							XPBarNoneA:SetWidth(val-4)
-							XPBarNoneR:SetWidth(val-4)
-							XPBarNoneBubbles:SetWidth(val-4)
-						end,
-
-					},
-					height = {
-						name = L["Height"],
-						desc = L["Set the bar height."],
-						type = "range",
-						min = 10,
-						max = 100,
-						step = 1,
-						get = function() return self.db.profile.Height end,
-						set = function(val)
-							self.db.profile.Height = val
-							XPBarNoneFrame:SetHeight(val)
-							XPBarNoneB:SetHeight(val-8)
-							XPBarNoneA:SetHeight(val-8)
-							XPBarNoneR:SetHeight(val-8)
-							XPBarNoneBubbles:SetHeight(val-8)
-						end,
-					},
-					fontsize = {
-						name = L["Font Size"],
-						desc = L["Change the size of the text."],
-						type = "range",
-						min = 5,
-						max = 30,
-						step = 1,
-						get = function() return self.db.profile.FontSize end,
-						set = function(val)
-							self.db.profile.FontSize = val
-							self:SetFontOptions()
-						end,
-					},
-					fontoutline = {
-						name = L["Font Outline"],
-						desc = L["Toggles the font outline."],
-						type = "toggle",
-						get = function() return self.db.profile.FontOutLine end,
-						set = function()
-							self.db.profile.FontOutLine = not self.db.profile.FontOutLine
-							self:SetFontOptions()
-						end,
-					},
-					textposition = {
-						name = L["Text Position"],
-						desc = L["Select the position of the text on XPBarNone."],
-						type = "range",
-						min = 0,
-						max = 100,
-						step = 1,
-						bigStep = 5,
-						get = function() return self.db.profile.TextPosition end,
-						set = function(val)
-							self.db.profile.TextPosition = val
-							self:SetTextPosition(val)
-						end,
-						isPercent = false,
-					},
-					mouseover = {
-						name = L["Mouse Over"],
-						desc = L["Toggles switching between XP bar and Rep bar when you mouse over XPBarNone."],
-						type = "toggle",
-						disabled = function() return self.db.profile.DynamicBars end,
-						get = function() return self.db.profile.MouseOver end,
-						set = function()
-							self.db.profile.MouseOver = not self.db.profile.MouseOver
-						end,
-					},
-					strata = {
-						name = L["Frame Strata"],
-						desc = L["Set the frame strata."],
-						type = "text",
-						get = function() return self.db.profile.Strata end,
-						set = function(val)
-							self.db.profile.Strata = val
-							XPBarNoneFrame:SetFrameStrata(val)
-						end,
-						validate = { ["HIGH"] = "High", ["MEDIUM"] = "Medium", ["LOW"] = "Low", ["BACKGROUND"] = "Background" },
-					},
-					texture = {
-						name = L["Texture"],
-						desc = L["Set the bar texture."],
-						type = "text",
-						get = function() return self.db.profile.Texture end,
-						set = function(val)
-							self.db.profile.Texture = val
-							self:SetTexture(val)
-						end,
-						validate = LSM3:List("statusbar")
-					},
-					hidetext = {
-						name = L["Hide Text"],
-						desc = L["Hide the text on the XP and Rep bars."],
-						type = "toggle",
-						get = function() return self.db.profile.HideText end,
-						set = function()
-							self.db.profile.HideText = not self.db.profile.HideText
-							self:UpdateXPBar()
-						end,
-					},
-					needshowzero = {
-						name = L["Show Zero"],
-						desc = L["Show zero values in the various Need tags, instead of an empty string"],
-						type = "toggle",
-						get = function() return self.db.profile.NeedShowZero end,
-						set = function()
-							self.db.profile.NeedShowZero = not self.db.profile.NeedShowZero
-							self:UpdateXPBar()
-						end,
-					},
-					dynamicbars = {
-						name = L["Dynamic Bars"],
-						desc = L["Show Rep bar on max level, XP bar on lower levels."],
-						type = "toggle",
-						get = function() return self.db.profile.DynamicBars end,
-						set = function()
-							self.db.profile.DynamicBars = not self.db.profile.DynamicBars
-							self:UpdateDynamicBars()
-							self:UpdateXPBar()
-						end,
-					},
-					col = {
-						name = L["Colours"],
-						desc = L["Set the various bar colours."],
-						type = "group",
-						args = {
-							backgroundcolour = {
-								name = L["Background Colour"],
-								desc = L["Set the colour of the background bar."],
-								type = "color",
-								get = function()
-									return self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a
-								end,
-								set = function(r, g, b, a)
-									self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a = r, g, b, a
-									XPBarNoneB:SetStatusBarColor(r, g, b, a)
-								end,
-								hasAlpha = true
-							},
-						},
-					},
-				},
-			},
-			xp = {
-				name = L["Experience"],
-				desc = L["Experience Bar related options"],
-				type = "group",
-				order = 2000,
-				args = {
-					string = {
-						name = L["Customise Text"],
-						desc = L["Customise the XP text string."],
-						type = "text",
-						usage = L["Customise the XP text string."],
-						get = function() return self.db.profile.XPString end,
-						set = function(s)
-							self.db.profile.XPString = s
-							self:UpdateXPBar()
-						end,
-					},
-					remaining = {
-						name = L["Remaining Rested XP"],
-						desc = L["Toggle the display of remaining rested XP."],
-						type = "toggle",
-						get = function() return self.db.profile.ShowRemaining end,
-						set = function()
-							self.db.profile.ShowRemaining = not self.db.profile.ShowRemaining
-							self:UpdateXPBar()
-						end,
-					},
-					resting = {
-						name = L["Rest Indication"],
-						desc = L["Toggle the rest indication."],
-						type = "toggle",
-						get = function() return self.db.profile.IndicateRest end,
-						set = function()
-							self.db.profile.IndicateRest = not self.db.profile.IndicateRest
-							self:UpdateXPBar()
-						end,
-					},
-					col = {
-						name = L["Colours"],
-						desc = L["Set the various bar colours."],
-						type = "group",
-						args = {
-							normal = {
-								name = L["Normal"],
-								desc = L["Set the colour of the normal bar."],
-								type = "color",
-								get = function()
-									return self.db.profile.normal.r, self.db.profile.normal.g, self.db.profile.normal.b
-								end,
-								set = function(r, g, b)
-									self.db.profile.normal.r, self.db.profile.normal.g, self.db.profile.normal.b = r, g, b
-									self:UpdateXPBar()
-								end,
-								hasAlpha = false
-							},
-							rested = {
-								name = L["Rested"],
-								desc = L["Set the colour of the rested bar."],
-								type = "color",
-								get = function()
-									return self.db.profile.rested.r, self.db.profile.rested.g, self.db.profile.rested.b
-								end,
-								set = function(r, g, b)
-									self.db.profile.rested.r, self.db.profile.rested.g, self.db.profile.rested.b = r, g, b
-									self:UpdateXPBar()
-								end,
-								hasAlpha = false
-							},
-							resting = {
-								name = L["Resting"],
-								desc = L["Set the colour of the resting bar."],
-								type = "color",
-								get = function()
-									return self.db.profile.resting.r, self.db.profile.resting.g, self.db.profile.resting.b
-								end,
-								set = function(r, g, b)
-									self.db.profile.resting.r, self.db.profile.resting.g, self.db.profile.resting.b = r, g, b
-									self:UpdateXPBar()
-								end,
-								hasAlpha = false
-							},
-							remaining = {
-								name = L["Remaining"],
-								desc = L["Set the colour of the remaining bar."],
-								type = "color",
-								get = function()
-									return self.db.profile.remaining.r, self.db.profile.remaining.g, self.db.profile.remaining.b
-								end,
-								set = function(r, g, b)
-									self.db.profile.remaining.r, self.db.profile.remaining.g, self.db.profile.remaining.b = r, g, b
-									self:UpdateXPBar()
-								end,
-								hasAlpha = false
-							},
-						},
-					},
-				},
-			},
-			reputation = {
-				name = L["Reputation"],
-				desc = L["Reputation Bar related options"],
-				type = "group",
-				order = 3000,
-				args = {
-					col = {
-						name = L["Colours"],
-						desc = L["Set the various bar colours."],
-						type = "group",
-						args = {
-							exalted = {
-								name = _G.FACTION_STANDING_LABEL8,
-								desc = L["Set the colour of the Exalted reputation bar."],
-								type = "color",
-								get = function()
-									return self.db.profile.exalted.r, self.db.profile.exalted.g, self.db.profile.exalted.b
-								end,
-								set = function(r, g, b)
-									self.db.profile.exalted.r, self.db.profile.exalted.g, self.db.profile.exalted.b = r, g, b
-									self:UpdateXPBar()
-								end,
-								hasAlpha = false
-							},
-						},
-					},
-					autowatch = {
-						name = L["Auto Watch Reputation"],
-						desc = L["Automatically watch the factions you gain rep with."],
-						type = "toggle",
-						get = function() return self.db.profile.AutoWatchRep end,
-						set = function()
-							self.db.profile.AutoWatchRep = not self.db.profile.AutoWatchRep
-							self:ToggleAutoWatch()
-						end,
-					},
-					showrep = {
-						name = L["Show Reputation"],
-						desc = L["Show the reputation bar instead of the XP bar."],
-						type = "toggle",
-						disabled = function() return self.db.profile.DynamicBars end,
-						get = function() return self.db.profile.ShowReputation end,
-						set = function()
-							self.db.profile.ShowReputation = not self.db.profile.ShowReputation
-							self:UpdateXPBar()
-						end,
-					},
-					string = {
-						name = L["Customise Text"],
-						desc = L["Customise the Reputation text string."],
-						type = "text",
-						usage = L["Customise the Reputation text string."],
-						get = function() return self.db.profile.RepString end,
-						set = function(s)
-							self.db.profile.RepString = s
-							self:UpdateRepData()
-						end,
-					},
-				},
-			},
-			config = {
-				name = L["Config"],
-				desc = L["Open XPBarNone Configuration Window"],
-				type = "execute",
-				order = 500,
-				func = function()
-					waterfall:Open("XPBarNone_Config")
-					dewdrop:Close()
-				end,
-			},
+-- Default settings
+local defaults = {
+	profile = {
+		--General
+		general = {
+			border = false,
+			texture = "Smooth",
+			width = 1028,
+			height = 20,
+			fontsize = 14,
+			fontoutline = false,
+			posx = nil,
+			posy = nil,
+			scale = 1,
+			strata = "HIGH",
+			hidetext = false,
+			dynamicbars = false,
+			mouseover = false,
+			locked = false,
+			bubbles = false,
+			clamptoscreen = true,
+			commify = false,
+			textposition = 50,
+		},
+		-- XP Bar specific
+		xp = {
+			xpstring = "Exp: [curXP]/[maxXP] ([restPC]) :: [curPC] through level [pLVL] :: [needXP] XP left :: [KTL] kills to level",
+			indicaterest = true,
+			showremaining = true,
+			showzerorest = true,
+		},
+		-- Rep bar specific
+		rep = {
+			repstring = "Rep: [faction] ([standing]) [curRep]/[maxRep] :: [repPC]",
+			autowatchrep = true,
+			showrepbar = false,
+		},
+		-- Colours of the various bars
+		-- We don't currently support alpha, but set it here so that we don't get
+		-- pointless vars in the savedvariables file.
+		colours = {
+			normal = { r = 0.8, g = 0, b = 1, a = 1 },
+			rested = { r = 0, g = 0.4, b = 1, a = 1 },
+			resting = { r = 1.0, g = 0.82, b = 0.25, a = 1 },
+			remaining = { r = 0.82, g = 0, b = 0, a = 1 },
+			background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
+			exalted = { r = 0, g = 0.77, b = 0.63, a = 1 },
 		},
 	}
-	XPBarNone:RegisterChatCommand({ "/xpbn", "/xpbarnone" }, self.options)
-
-	waterfall:Register('XPBarNone_Config',
-		'aceOptions', self.options,
-		'title', L["XPBarNone Config"]
-	)
+}
+-- Return an options table.
+local function GetOptions(uiTypes, uiName, appName)
+	if appName == "XPBarNone-General" then
+		local options = {
+			type = "group",
+			name = GetAddOnMetadata("XPBarNone", "Title"),
+			get = function(info) return db.general[info[#info]] end,
+			set = function(info, value)
+				db.general[info[#info]] = value
+				self:UpdateXPBar()
+			end,
+			args = {
+				xpbndesc = {
+					type = "description",
+					order = 0,
+					name = GetAddOnMetadata("XPBarNone", "Notes"),
+				},
+				locked = {
+					name = L["Lock"],
+					desc = L["Toggle the locking."],
+					type = "toggle",
+					order = 100,
+				},
+				clamptoscreen = {
+					name = L["Screen Clamp"],
+					desc = L["Toggle screen clamping."],
+					type = "toggle",
+					order = 200,
+				},
+				commify = {
+					name = L["Commify"],
+					desc = L["Insert thousands separators into long numbers."],
+					type = "toggle",
+					order = 300,
+				},
+				border = {
+					name = L["Border"],
+					desc = L["Toggle the border."],
+					type = "toggle",
+					order = 400,
+					set = function(info, value)
+						db.general.border = value
+						self:ToggleBorder()
+					end,
+				},
+				bubbles = {
+					name = L["Bubbles"],
+					desc = L["Toggle bubbles on the XP bar."],
+					type = "toggle",
+					order = 500,
+					set = function(info, value)
+						db.general.bubbles = value
+						self:ToggleBubbles()
+					end,
+				},
+				scale = {
+					name = L["Scale"],
+					desc = L["Set the bar scale."],
+					type = "range",
+					order = 600,
+					min = 0.5,
+					max = 2,
+					set = function(info, value)
+						self:SavePosition()
+						self.frame:SetScale(value)
+						db.general.scale = value
+						self:RestorePosition()
+					end,
+				},
+				width = {
+					name = L["Width"],
+					desc = L["Set the bar width."],
+					type = "range",
+					order = 700,
+					min = 100,
+					max = 5000,
+					step = 1,
+					bigStep = 50,
+					set = function(info, value)
+						db.general.width = value
+						self:SetWidth(value)
+					end,
+				},
+				height = {
+					name = L["Height"],
+					desc = L["Set the bar height."],
+					type = "range",
+					order = 800,
+					min = 10,
+					max = 100,
+					step = 1,
+					bigStep = 5,
+					set = function(info, value)
+						db.general.height = value
+						self:SetHeight(value)
+					end
+				},
+				fontsize = {
+					name = L["Font Size"],
+					desc = L["Change the size of the text."],
+					type = "range",
+					order = 900,
+					min = 5,
+					max = 30,
+					step = 1,
+					bigStep = 5,
+				},
+				fontoutline = {
+					name = L["Font Outline"],
+					desc = L["Toggles the font outline."],
+					type = "toggle",
+					order = 1000,
+				},
+				textposition = {
+					name = L["Text Position"],
+					desc = L["Select the position of the text on XPBarNone."],
+					type = "range",
+					order = 1100,
+					min = 0,
+					max = 100,
+					step = 1,
+					bigStep = 5,
+					set = function(info, value)
+						db.general.textposition = value
+						self:SetTextPosition(value)
+					end,
+				},
+				mouseover = {
+					name = L["Mouse Over"],
+					desc = L["Toggles switching between XP bar and Rep bar when you mouse over XPBarNone."],
+					type = "toggle",
+					order = 1200,
+					disabled = function() return db.general.dynamicbars end,
+				},
+				strata = {
+					name = L["Frame Strata"],
+					desc = L["Set the frame strata."],
+					type = "select",
+					order = 1300,
+					values = {
+						HIGH = "High",
+						MEDIUM = "Medium",
+						LOW = "Low",
+						BACKGROUND = "Background",
+					},
+					style = "dropdown",
+				},
+				texture = {
+					name = L["Texture"],
+					desc = L["Set the bar texture."],
+					type = "select",
+					order = 1400,
+					dialogControl = 'LSM30_Statusbar',
+					values = AceGUIWidgetLSMlists.statusbar,
+					style = "dropdown",
+					set = function(info, value)
+						db.general.texture = value
+						self:SetTexture(value)
+						self:UpdateXPBar()
+					end,
+				},
+				hidetext = {
+					name = L["Hide Text"],
+					desc = L["Hide the text on the XP and Rep bars."],
+					type = "toggle",
+					order = 1500,
+				},
+				showzerorep = {
+					name = L["Show Zero"],
+					desc = L["Show zero values in the various Need tags, instead of an empty string"],
+					type = "toggle",
+					order = 1600,
+				},
+				dynamicbars = {
+					name = L["Dynamic Bars"],
+					desc = L["Show Rep bar on max level, XP bar on lower levels."],
+					type = "toggle",
+					order = 1700,
+				},
+			},
+		}
+		return options
+	end
+	if appName == "XPBarNone-XP" then
+		local options = {
+			type = "group",
+			name = L["Experience"],
+			get = function(info) return db.xp[info[#info]] end,
+			set = function(info, value)
+				db.xp[info[#info]] = value
+				self:UpdateXPBar()
+			end,
+			args = {
+				xpdesc = {
+					type = "description",
+					order = 0,
+					name = L["Experience Bar related options"],
+				},
+				xpstring = {
+					name = L["Customise Text"],
+					desc = L["Customise the XP text string."],
+					type = "input",
+					order = 100,
+					width = "full",
+				},
+				showremaining = {
+					name = L["Remaining Rested XP"],
+					desc = L["Toggle the display of remaining rested XP."],
+					type = "toggle",
+					order = 200,
+				},
+				indicaterest = {
+					name = L["Rest Indication"],
+					desc = L["Toggle the rest indication."],
+					type = "toggle",
+					order = 300,
+				},
+			},
+		}
+		return options
+	end
+	if appName == "XPBarNone-Rep" then
+		local options = {
+			type = "group",
+			name = L["Reputation"],
+			get = function(info) return db.rep[info[#info]] end,
+			set = function(info, value)
+				db.rep[info[#info]] = value 
+				self:UpdateXPBar()
+			end,
+			args = {
+				repdesc = {
+					type = "description",
+					order = 0,
+					name = L["Reputation Bar related options"],
+				},
+				repstring = {
+					name = L["Customise Text"],
+					desc = L["Customise the Reputation text string."],
+					type = "input",
+					order = 100,
+					width = "full",
+				},
+				autowatchrep = {
+					name = L["Auto Watch Reputation"],
+					desc = L["Automatically watch the factions you gain rep with."],
+					type = "toggle",
+					order = 200,
+					set = function()
+						db.rep.autowatchrep = not db.rep.autowatchrep
+						XPBarNone:ToggleAutoWatch()
+					end,
+				},
+				showrepbar = {
+					name = L["Show Reputation"],
+					desc = L["Show the reputation bar instead of the XP bar."],
+					type = "toggle",
+					order = 300,
+					set = function()
+						XPBarNone:ToggleShowReputation()
+					end,
+				},
+			},
+		}
+		return options
+	end
+	if appName == "XPBarNone-Colours" then
+		local options = {
+			type = "group",
+			name = "Colours",
+			get = function(info) 
+				return db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a or 1
+			end,
+			set = function(info, r, g, b, a)
+				db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a = r, g, b, a
+				self:UpdateXPBar()
+			end,
+			args = {
+				coloursdesc = {
+					type = "description",
+					order = 0,
+					name = "Set the colours for various XPBarNone bars.",
+				},
+				normal = {
+					name = L["Normal"],
+					desc = L["Set the colour of the normal bar."],
+					type = "color",
+					order = 100,
+					hasAlpha = false,
+				},
+				rested = {
+					name = L["Rested"],
+					desc = L["Set the colour of the rested bar."],
+					type = "color",
+					order = 200,
+					hasAlpha = false,
+				},
+				resting = {
+					name = L["Resting"],
+					desc = L["Set the colour of the resting bar."],
+					type = "color",
+					order = 300,
+					hasAlpha = false,
+				},
+				remaining = {
+					name = L["Remaining"],
+					desc = L["Set the colour of the remaining bar."],
+					type = "color",
+					order = 400,
+					hasAlpha = false,
+				},
+				exalted = {
+					name = _G.FACTION_STANDING_LABEL8,
+					desc = L["Set the colour of the Exalted reputation bar."],
+					type = "color",
+					order = 500,
+					hasAlpha = false,
+				},
+			},
+		}
+		return options
+	end
 end
 
-function XPBarNone:CreateXPBar()
-	-- Check if the XPBar was already created before continuing.
-	if XPBarNoneFrame then return end
-
-	-- Make the XP Bar.
-	XPBarNoneFrame = CreateFrame("Frame", "XPBarNoneFrame", UIParent)
-	XPBarNoneFrame:SetFrameStrata(self.db.profile.Strata)
-	XPBarNoneFrame:SetMovable(true)
-	XPBarNoneFrame:Hide()
-
-	if self.db.profile.Scale then
-		XPBarNoneFrame:SetScale(self.db.profile.Scale)
+-- Set the font for the bar text
+function XPBarNone:SetFontOptions()
+	local font, size, flags = GameFontNormal:GetFont()
+	if db.general.fontoutline then
+		flags = "OUTLINE"
 	end
+	self.frame.bartext:SetFont(font, db.general.fontsize, flags)
+end
 
-	XPBarNoneFrame:ClearAllPoints()
-	if not self.db.profile.PosX then
-		XPBarNoneFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+-- Position of text along the XP Bar
+function XPBarNone:SetTextPosition(percent)
+	local width = db.general.width
+	local posx = math_floor(((width / 100) * percent) - (width / 2))
+	self.frame.bartext:ClearAllPoints()
+	self.frame.bartext:SetPoint("CENTER", self.frame, "CENTER", posx or 0, 0)
+end
+
+-- Set bar textures
+function XPBarNone:SetTexture(texture)
+	local texturePath = LSM3:Fetch("statusbar", texture)
+	self.frame.background:SetStatusBarTexture(texturePath)
+	self.frame.remaining:SetStatusBarTexture(texturePath)
+	self.frame.xpbar:SetStatusBarTexture(texturePath)
+	self.frame.background:SetStatusBarColor(db.colours.background.r, db.colours.background.g, db.colours.background.b, db.colours.background.a)
+end
+
+-- Set bar widths
+function XPBarNone:SetWidth(width)
+	self.frame:SetWidth(width)
+	self.frame.background:SetWidth(width - 4)
+	self.frame.remaining:SetWidth(width - 4)
+	self.frame.xpbar:SetWidth(width - 4)
+	self.frame.bubbles:SetWidth(width - 4)
+end
+
+function XPBarNone:SetHeight(height)
+	self.frame:SetHeight(height)
+	self.frame.background:SetHeight(height - 4)
+	self.frame.remaining:SetHeight(height - 4)
+	self.frame.xpbar:SetHeight(height - 4)
+	self.frame.bubbles:SetHeight(height - 4)
+end
+
+-- Toggle the border
+function XPBarNone:ToggleBorder()
+	if db.general.border then
+		self.frame:SetBackdropBorderColor(1, 1, 1, 1)
 	else
-		XPBarNoneFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.PosX, self.db.profile.PosY)
+		self.frame:SetBackdropBorderColor(0, 0, 0, 0)
 	end
-	XPBarNoneFrame:SetWidth(self.db.profile.Width)
-	XPBarNoneFrame:SetHeight(self.db.profile.Height)
-	
-	XPBarNoneFrame:SetBackdrop({
-		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 12,
-		insets = {left = 5, right = 5, top = 5, bottom = 5}
-	})
+end
+
+-- Toggle the bubbles
+function XPBarNone:ToggleBubbles()
+	if db.general.bubbles then
+		self.frame.bubbles:Show()
+	else
+		self.frame.bubbles:Hide()
+	end
+end
+
+-- Toggle the screen clamp
+function XPBarNone:ToggleClamp()
+	self.frame:SetClampedToScreen(db.general.clamptoscreen and true or false)
+end
+
+-- Toggle between rep and xp bar.
+function XPBarNone:ToggleShowReputation()
+	if db.rep.showrepbar then
+		db.rep.showrepbar = false
+	else
+		db.rep.showrepbar = true
+	end
+	self:UpdateXPBar()
+end
+
+-- Refreshes the config for profiles support, NYI
+function XPBarNone:RefreshConfig()
+	self.frame:SetFrameStrata(db.general.strata)
+	self.frame:SetScale(db.general.scale)
+	self:SetWidth(db.general.width)
+	self:SetHeight(db.general.height)
 	self:ToggleBorder()
-
-	local XPBarNoneButton = CreateFrame("Button", "XPBarNoneButton", XPBarNoneFrame)
-	XPBarNoneButton:SetAllPoints(XPBarNoneFrame)
-	XPBarNoneButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-	XPBarNoneButton:RegisterForDrag("LeftButton")
-	XPBarNoneButton:SetScript("OnClick", function()
-		-- Paste currently displayed text to editbox on Shift-LeftClick
-		if IsShiftKeyDown() and arg1 == "LeftButton" then
-			if not ChatFrameEditBox:IsVisible() then ChatFrameEditBox:Show() end
-			ChatFrameEditBox:Insert(XPBarNoneText:GetText())
-		end
-		-- Display options menu on Shift-RightClick
-		if IsShiftKeyDown() and arg1 == "RightButton" then
-			dewdrop:Register(XPBarNoneButton, 'children', self.options, 'dontHook', true)
-			dewdrop:Open(XPBarNoneButton, 'point', "LEFT", 'relativePoint', "RIGHT", 'cursorX', true, 'cursorY', true)
-			dewdrop:Unregister(XPBarNoneButton)
-		end
-		-- Display Reputation Menu on Ctrl-RightClick
-		if IsControlKeyDown() and arg1 == "RightButton" then
-			dewdrop:Register(XPBarNoneButton, 'children', function() self:DewdropFactionsMenu() end, 'dontHook', true)
-			dewdrop:Open(XPBarNoneButton, 'point', "LEFT", 'relativePoint', "RIGHT", 'cursorX', true, 'cursorY', true)
-			dewdrop:Unregister(XPBarNoneButton)
-		end
-	end)
-	XPBarNoneButton:SetScript("OnDragStart", function ()
-		if not self.db.profile.Locked then
-			XPBarNoneFrame:StartMoving()
-		end
-	end)
-	XPBarNoneButton:SetScript("OnDragStop", function()
-		XPBarNoneFrame:StopMovingOrSizing()
-		self:SavePosition()
-	end)
-	XPBarNoneButton:SetScript("OnEnter", function()
-		if self.db.profile.MouseOver and not IsShiftKeyDown() and not IsControlKeyDown() then
-			XPBarNone:ToggleShowReputation()
-		else
-			self.moshift = 1
-		end
-	end)
-	XPBarNoneButton:SetScript("OnLeave", function()
-		if self.db.profile.MouseOver and not self.moshift then
-			XPBarNone:ToggleShowReputation()
-		else
-			self.moshift = nil
-		end
-	end)
-
-	-- Frame Background
-	local XPBarNoneB = CreateFrame("StatusBar", "XPBarNoneB", XPBarNoneFrame)
-	XPBarNoneB:SetPoint("CENTER", XPBarNoneFrame, "CENTER", 0, 0)
-	XPBarNoneB:SetWidth(XPBarNoneFrame:GetWidth() - 4)
-	XPBarNoneB:SetHeight(XPBarNoneFrame:GetHeight() - 8)
-
-	-- XP Bar
-	local XPBarNoneA = CreateFrame("StatusBar", "XPBarNoneA", XPBarNoneFrame)
-	XPBarNoneA:SetPoint("CENTER", XPBarNoneFrame, "CENTER", 0, 0)
-	XPBarNoneA:SetWidth(XPBarNoneFrame:GetWidth() - 4)
-	XPBarNoneA:SetHeight(XPBarNoneFrame:GetHeight() - 8)
-
-	-- Remaining Rested XP Bar
-	local XPBarNoneR = CreateFrame("StatusBar", "XPBarNoneR", XPBarNoneFrame)
-	XPBarNoneR:SetPoint("CENTER", XPBarNoneFrame, "CENTER", 0, 0)
-	XPBarNoneR:SetWidth(XPBarNoneFrame:GetWidth() - 4)
-	XPBarNoneR:SetHeight(XPBarNoneFrame:GetHeight() - 8)
-
-	-- Bubbles
-	local XPBarNoneBubbles = CreateFrame("StatusBar", "XPBarNoneBubbles", XPBarNoneFrame)
-	XPBarNoneBubbles:SetStatusBarTexture("Interface\\AddOns\\XPBarNone\\Textures\\bubbles")
-	XPBarNoneBubbles:SetPoint("CENTER", XPBarNoneFrame, "CENTER", 0, 0)
-	XPBarNoneBubbles:SetWidth(XPBarNoneFrame:GetWidth() - 4)
-	XPBarNoneBubbles:SetHeight(XPBarNoneFrame:GetHeight() - 8)
-
-	-- XP Bar Text
-	local XPBarNoneText = XPBarNoneButton:CreateFontString("XPBarNoneText", "OVERLAY")
 	self:SetFontOptions()
-	XPBarNoneText:SetShadowOffset(1, -1)
-	--XPBarNoneText:SetPoint("CENTER", XPBarNoneFrame, "CENTER", self.db.profile.TextPosition or 0, 0)
-	self:SetTextPosition(self.db.profile.TextPosition)
-	XPBarNoneText:SetTextColor(1,1,1,1)
-
-	-- Set frame levels
-	XPBarNoneFrame:SetFrameLevel(0)
-	XPBarNoneB:SetFrameLevel(XPBarNoneFrame:GetFrameLevel() + 1)
-	XPBarNoneR:SetFrameLevel(XPBarNoneFrame:GetFrameLevel() + 2)
-	XPBarNoneA:SetFrameLevel(XPBarNoneFrame:GetFrameLevel() + 3)
-	XPBarNoneBubbles:SetFrameLevel(XPBarNoneFrame:GetFrameLevel() + 4)
-	XPBarNoneButton:SetFrameLevel(XPBarNoneFrame:GetFrameLevel() + 5)
-
-	-- Sort out the textures
-	self:SetTexture(self.db.profile.Texture)
-
-	-- Sort out the Bubbles
+	self:SetTextPosition(db.general.textposition)
+	self:SetTexture(db.general.texture)
 	self:ToggleBubbles()
-
-	-- Set the screen clamp if required
 	self:ToggleClamp()
-
-	-- Restore the bar position
+	self:GenHexColours()
 	self:RestorePosition()
 end
 
+function XPBarNone:OnInitialize()
+	-- Get the DB.
+	self.db = LibStub("AceDB-3.0"):New("XPBarNoneDB", defaults, "Defaults")
+	db = self.db.profile
+	-- Register options
+	local myName = GetAddOnMetadata("XPBarNone", "Title")
+	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-General", GetOptions)
+	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-XP", GetOptions)
+	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-Rep", GetOptions)
+	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-Colours", GetOptions)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-General", myName)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-XP", "XP", myName)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-Rep", "Reputation", myName)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-Colours", "Colours", myName)
+	-- Register a chat command to open options
+	self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame) end)
+	-- Profiles
+	local popts = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
+	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-Profiles", popts)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-Profiles", "Profiles", myName)
+	-- For profile support. NYI
+	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
+	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
+	self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
+end
+
 function XPBarNone:OnEnable()
-	self:CreateXPBar()
+	-- Create the XP bar if it isn't created yet.
+	if self.CreateXPBar then
+		self:CreateXPBar()
+	end
+	-- Set the options on the bar.
+	self:RefreshConfig()
+	-- XP Events
 	self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
 	self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
-	self:RegisterEvent("UPDATE_EXHAUSTION", "UpdateXPBar")
 	self:RegisterEvent("PLAYER_UPDATE_RESTING", "UpdateXPData")
+	self:RegisterEvent("UPDATE_EXHAUSTION", "UpdateXPBar")
+	-- Rep Events
 	self:RegisterEvent("UPDATE_FACTION", "UpdateXPBar")
-	--[[self:RegisterEvent("LibSharedMedia_Registered", "EthernetBroadcast")
-	self:RegisterEvent("LibSharedMedia_SetGlobal", function(mtype, override)
-		if mtype == "statusbar" then
-			self:SetTexture(override)
-		end
-	end)]]
-
+	-- Only register this one if we're auto watching rep.
+	if db.rep.autowatchrep then
+		self:RegisterEvent("COMBAT_TEXT_UPDATE")
+	end
+	-- Register some LSM3 callbacks
 	LSM3.RegisterCallback(self, "LibSharedMedia_Registered", "MediaUpdate")
 	LSM3.RegisterCallback(self, "LibSharedMedia_SetGlobal", function(callback, mtype, override)
 		if mtype == "statusbar" and override ~= nil then
@@ -661,140 +589,26 @@ function XPBarNone:OnEnable()
 		end
 	end)
 
-	-- If enabled, initially show the reputation bar on max level
-	-- (for those using the same profile for different chars)
-	if self.db.profile.DynamicBars then
+	-- Check for dynamic bars.
+	if db.general.dynamicbars then
 		self:UpdateDynamicBars()
 	end
 
+	-- Show the bar.
 	self:UpdateXPData()
-	self:MediaUpdate()
-	XPBarNoneFrame:Show()
-
-	-- Only register this event if we're auto watching
-	if self.db.profile.AutoWatchRep then
-		self:RegisterEvent("COMBAT_TEXT_UPDATE")
-	end
+	self.frame:Show()
 end
 
 function XPBarNone:OnDisable()
-	XPBarNoneFrame:Hide()
+	self.frame:Hide()
 	LSM3.UnregisterAllCallbacks(self)
 end
 
-function XPBarNone:ToggleClamp()
-	if self.db.profile.Clamp then
-		XPBarNoneFrame:SetClampedToScreen(true)
-	else
-		XPBarNoneFrame:SetClampedToScreen(false)
-	end
-end
-
-function XPBarNone:ToggleAutoWatch()
-	if self.db.profile.AutoWatchRep then
-		if not self:IsEventRegistered("COMBAT_TEXT_UPDATE") then
-			self:RegisterEvent("COMBAT_TEXT_UPDATE")
-		end
-	else
-		if self:IsEventRegistered("COMBAT_TEXT_UPDATE") then
-			self:UnregisterEvent("COMBAT_TEXT_UPDATE")
-		end
-	end
-end
-
-function XPBarNone:ToggleBorder()
-	if self.db.profile.Border then
-		XPBarNoneFrame:SetBackdropBorderColor(1,1,1,1)
-	else
-		XPBarNoneFrame:SetBackdropBorderColor(0,0,0,0)
-	end
-end
-
-function XPBarNone:ToggleBubbles()
-	if self.db.profile.Bubbles then
-		XPBarNoneBubbles:Show()
-	else
-		XPBarNoneBubbles:Hide()
-	end
-end
-
-function XPBarNone:ToggleShowReputation()
-	if self.db.profile.ShowReputation then
-		self.db.profile.ShowReputation = false
-		self:UpdateXPBar()
-	else
-		self.db.profile.ShowReputation = true
-		self:UpdateXPBar()
-	end
-end
-
-function XPBarNone:SetTexture(texture)
-	local texturePath = LSM3:Fetch("statusbar", texture)
-	XPBarNoneB:SetStatusBarTexture(texturePath)
-	XPBarNoneA:SetStatusBarTexture(texturePath)
-	XPBarNoneR:SetStatusBarTexture(texturePath)
-	XPBarNoneB:SetStatusBarColor(self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.background.a)
-end
-
-function XPBarNone:SetTextPosition(percent)
-	local width = self.db.profile.Width
-	local xpos = floor(((width / 100) * percent) - (width / 2))
-	XPBarNoneText:ClearAllPoints()
-	XPBarNoneText:SetPoint("CENTER", XPBarNoneFrame, "CENTER", xpos or 0, 0)
-end
-
-function XPBarNone:MediaUpdate()
-	self.options.args.general.args.texture.validate = LSM3:List("statusbar")
-end
-
-function XPBarNone:SetFontOptions()
-	local font, size, flags = GameFontNormal:GetFont()
-	if self.db.profile.FontOutLine then
-		flags = "OUTLINE"
-	end
-	XPBarNoneText:SetFont(font, self.db.profile.FontSize, flags)
-end
-
-function XPBarNone:LevelUp(level)
-	-- Set to show only reputation and disable the MouseOver mode
-	-- if the player hits the max level.
-	if level == maxPlayerLevel then
-		self.db.profile.ShowReputation = true
-		self.db.profile.MouseOver = false
-	end
-	self:UpdateXPBar()
-end
-
-function XPBarNone:UpdateDynamicBars()
-	-- Shows only reputation when at max level.
-	-- Otherwise, show XP bar.
-	if UnitLevel("player") == maxPlayerLevel then
-		self.db.profile.ShowReputation = true
-		self.db.profile.MouseOver = false
-	else
-		self.db.profile.ShowReputation = false
-		self.db.profile.MouseOver = true
-	end
-end
-
-function XPBarNone:UpdateXPData()
-	local prevXP = self.cXP or 0
-
-	self.cXP = UnitXP("player")
-	self.nXP = UnitXPMax("player")
-	self.remXP = self.nXP - self.cXP
-	self.diffXP = self.cXP - prevXP
-
-	if self.diffXP > 0 then
-		lastXPValues[math_mod(sessionkills, 10)+1] = self.diffXP
-		sessionkills = sessionkills + 1
-	end
-
-	self:UpdateXPBar()
-end
-
+-- Some small local functions
+-- commify(num) Inserts thousands separators into numbers.
+-- 1000000 -> 1,000,000. etc.
 local function commify(num)
-	if not self.db.profile.Commify or string_len(tostring(num)) <= 3 or type(num) ~= "number" then
+	if not db.general.commify or string_len(tostring(num)) <= 3 or type(num) ~= "number" then
 		return num
 	end
 	local str = ""
@@ -810,33 +624,70 @@ local function commify(num)
 	return string_reverse(str)
 end
 
+-- Tooltips for the rep menu
+function XPBarNone:SetTooltip(tip)
+	GameTooltip_SetDefaultAnchor(GameTooltip, WorldFrame)
+	GameTooltip:SetText(tip[1], 1, 1, 1)
+	GameTooltip:AddLine(tip[2])
+	GameTooltip:Show()
+end
 
-local function GetRepText(repName, repStanding, repMin, repMax, repValue)
-	local text = XPBarNone.db.profile.RepString
+function XPBarNone:HideTooltip()
+	GameTooltip:FadeOut()
+end
 
-	--Default: "Rep: [faction] ([standing]) [curRep]/[maxRep] :: [repPC]"
-	text = gsub(text, "%[faction%]", repName)
-	text = gsub(text, "%[standing%]", _G["FACTION_STANDING_LABEL"..repStanding])
-	text = gsub(text, "%[curRep%]", commify(repValue)) --commify(sformat("%d", repValue)))
-	text = gsub(text, "%[maxRep%]", commify(repMax)) --commify(sformat("%d", repMax)))
-	text = gsub(text, "%[repPC%]", sformat("%.1f%%%%", repValue / repMax * 100))
-	text = gsub(text, "%[needRep%]", commify(repMax - repValue)) --commify(sformat("%d", repMax - repValue)))
-	text = gsub(text, "%[needPC%]", sformat("%.1f%%%%", floor(100 - (repValue / repMax * 100))))
+-- Get the number of kills to level
+local function GetNumKTL()
+	local remainingXP = XPBarNone.remXP
+	local xp = 0
+	for _, v in ipairs(lastXPValues) do
+		xp = xp + v
+	end
+	local avgxp = xp / #lastXPValues
+	return math_ceil(remainingXP / avgxp)
+end
+
+-- Get the XP bar text
+local function GetXPText(restedXP)
+	local text = db.xp.xpstring
+
+	text = string_gsub(text, "%[curXP%]", commify(XPBarNone.cXP))
+	text = string_gsub(text, "%[maxXP%]", commify(XPBarNone.nXP))
+
+	if restedXP then
+		text = string_gsub(text, "%[restXP%]", commify(restedXP))
+		text = string_gsub(text, "%[restPC%]", string_format("%.1f%%%%", restedXP / XPBarNone.nXP * 100))
+	else
+		text = string_gsub(text, "%[restXP%]", db.xp.showzerorest and "0" or "")
+		text = string_gsub(text, "%[restPC%]", db.xp.showzerorest and "0%%" or "")
+	end
+
+	text = string_gsub(text, "%[curPC%]", string_format("%.1f%%%%", XPBarNone.cXP / XPBarNone.nXP * 100))
+	text = string_gsub(text, "%[needPC%]", string_format("%.1f%%%%", 100 - (XPBarNone.cXP / XPBarNone.nXP * 100)))
+	text = string_gsub(text, "%[pLVL%]", UnitLevel("player"))
+	text = string_gsub(text, "%[nLVL%]", UnitLevel("player") + 1)
+	text = string_gsub(text, "%[mLVL%]", maxPlayerLevel)
+	text = string_gsub(text, "%[needXP%]", commify(XPBarNone.remXP))
+
+	local ktl = tonumber(string_format("%d", GetNumKTL()))
+	if ktl <= 0 or not ktl then
+		ktl = '?'
+	end
+
+	text = string_gsub(text, "%[KTL%]", commify(ktl))
+	text = string_gsub(text, "%[BTL%]", string_format("%d", math_ceil(20 - ((XPBarNone.cXP / XPBarNone.nXP * 100) / 5))))
 
 	return text
 end
 
+-- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
 		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
-
-		-- We've found our faction
 		if name == faction then
-			-- If it's not watched, and it's not a header
-			-- set it to be watched and return
-			-- if it's already watched, or it is a header
-			-- do nothing
+			-- If it's not watched and it's not a header
+			-- watch it.
 			if not isWatched and not isHeader then
 				SetWatchedFactionIndex(i)
 				return
@@ -846,194 +697,35 @@ local function SetWatchedFactionName(faction)
 		end
 	end
 end
+-- GetRepText
+-- Returns the text for the reputation bar after substituting the various tokens
+local function GetRepText(repName, repStanding, repMin, repMax, repValue)
+	local text = db.rep.repstring
 
-function XPBarNone:COMBAT_TEXT_UPDATE(msgtype, faction, amount)
-	-- Bail out of it's not a FACTION update.
-	if msgtype ~= "FACTION" then
-		return
-	end
-
-	-- Make sure that we really are watching rep, although, we shouldn't even be in this function if we're not.
-	-- I might remove this check later on because of the above fact.
-	if self.db.profile.AutoWatchRep then
-		-- We don't want to watch factions we're loosing rep with.
-		if smatch(amount, "^%-.*") then
-			return
-		end
-
-		-- Everything OK?  Good, watch the faction.
-		SetWatchedFactionName(faction)
-	end
-end
-
-function XPBarNone:UpdateRepData()
-	if not self.db.profile.ShowReputation then return end
-	
-	local repName, repStanding, repMin, repMax, repValue = GetWatchedFactionInfo()
-
-	if repName == nil then
-		if XPBarNoneA:IsVisible() then XPBarNoneA:Hide() end
-		XPBarNoneText:SetText(L["You need to select a faction to watch."])
-		return
-	end
-
-	repMax = repMax - repMin
-	repValue = repValue - repMin
-	repMin = 0
-	
-	if not XPBarNoneA:IsVisible() then XPBarNoneA:Show() end
-
-	XPBarNoneR:Hide()
-	XPBarNoneA:SetMinMaxValues(min(0, repValue), repMax)
-	XPBarNoneA:SetValue(repValue)
-
-	-- Use our own colour for exalted.
-	local repColour
-	if repStanding == 8 then
-		repColour = self.db.profile.exalted
-	else
-		repColour = FACTION_BAR_COLORS[repStanding]
-	end
-	XPBarNoneA:SetStatusBarColor(repColour.r, repColour.g, repColour.b)
-
-	if not self.db.profile.HideText then
-		XPBarNoneText:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue))
-	else
-		XPBarNoneText:SetText("")
-	end
-end
-
--- Average the XP to get a more accurate kills to level number
-local function GetNumKTL()
-	local remainingXP = XPBarNone.remXP
-	local xp = 0
-	for _, v in ipairs(lastXPValues) do
-		xp = xp + v
-	end
-	local avgxp = xp / #lastXPValues
-	return ceil(remainingXP / avgxp)
-end
---[[
-function XPBarNone:PrintKTL()
-	for _, v in ipairs(lastXPValues) do
-		self:Print(v)
-	end
-	self:Print(GetNumKTL())
-end
-]]
--- function to replace text
-local function GetXPText(restedXP)
-	local text = XPBarNone.db.profile.XPString
-
-	--Default: "Exp: [curXP]/[maxXP] ([restPC]) :: [curPC] through level [pLVL] :: [needXP] XP left :: [KTL] kills to level"
-	text = gsub(text, "%[curXP%]", commify(XPBarNone.cXP))
-	text = gsub(text, "%[maxXP%]", commify(XPBarNone.nXP))
-	
-	if restedXP then
-		text = gsub(text, "%[restXP%]", commify(restedXP))
-		text = gsub(text, "%[restPC%]", sformat("%.1f%%%%", restedXP / XPBarNone.nXP * 100))
-	else
-		text = gsub(text, "%[restXP%]", XPBarNone.db.profile.NeedShowZero and "0%%" or "")
-		text = gsub(text, "%[restPC%]", XPBarNone.db.profile.NeedShowZero and "0%%" or "")
-	end
-
-	text = gsub(text, "%[curPC%]", sformat("%.1f%%%%", XPBarNone.cXP / XPBarNone.nXP * 100))
-	text = gsub(text, "%[needPC%]", sformat("%.1f%%%%", 100 - (XPBarNone.cXP / XPBarNone.nXP * 100)))
-	text = gsub(text, "%[pLVL%]", UnitLevel("player"))
-	text = gsub(text, "%[nLVL%]", UnitLevel("player") + 1)
-	text = gsub(text, "%[mLVL%]", maxPlayerLevel)
-	text = gsub(text, "%[needXP%]", commify(XPBarNone.remXP))
-	--local ktl = tonumber(sformat("%d", ceil(XPBarNone.remXP / XPBarNone.diffXP)))
-	local ktl = tonumber(sformat("%d", GetNumKTL()))
-	if ktl <= 0 or not ktl then
-		ktl = '?'
-	end
-	text = gsub(text, "%[KTL%]", commify(ktl))
-
-	-- Bars to level (those bubble things on the XP bar).  20 bars total, each is 5%.
-	text = gsub(text, "%[BTL%]", sformat("%d", ceil(20 - ((XPBarNone.cXP / XPBarNone.nXP * 100) / 5))))
+	-- Now replace all the tokens
+	text = string_gsub(text, "%[faction%]", repName)
+	text = string_gsub(text, "%[standing%]", _G["FACTION_STANDING_LABEL"..repStanding])
+	text = string_gsub(text, "%[curRep%]", commify(repValue))
+	text = string_gsub(text, "%[maxRep%]", commify(repMax))
+	text = string_gsub(text, "%[repPC%]", string_format("%.1f%%%%", repValue / repMax * 100))
+	text = string_gsub(text, "%[needRep%]", commify(repMax - repValue))
+	text = string_gsub(text, "%[needPC%]", string_format("%.1f%%%%", math_floor(100 - (repValue / repMax * 100))))
 
 	return text
 end
 
-function XPBarNone:UpdateXPBar()
-	if dewdrop:IsOpen(XPBarNoneButton) then
-		dewdrop:Refresh(1)
-	end
-	if self.db.profile.ShowReputation then
-		self:UpdateRepData()
-		return
-	else
-		if not XPBarNoneA:IsVisible() then
-			XPBarNoneA:Show()
-		end
-	end
-
-	local restedXP = GetXPExhaustion()
-
-	if restedXP == nil then
-		if XPBarNoneR:IsVisible() then XPBarNoneR:Hide() end
-		local normal = self.db.profile.normal
-		XPBarNoneA:SetStatusBarColor(normal.r, normal.g, normal.b)
-	else
-		XPBarNoneR:SetMinMaxValues(min(0, self.cXP), self.nXP)
-		XPBarNoneR:SetValue(self.cXP + restedXP)
-
-		local remaining = self.db.profile.remaining
-		XPBarNoneR:SetStatusBarColor(remaining.r, remaining.g, remaining.b)
-		
-		-- Do we want to indicate rest?
-		if IsResting() and self.db.profile.IndicateRest then
-			local resting = self.db.profile.resting
-			XPBarNoneA:SetStatusBarColor(resting.r, resting.g, resting.b)
-		else
-			local rested = self.db.profile.rested
-			XPBarNoneA:SetStatusBarColor(rested.r, rested.g, rested.b)
-		end
-
-		-- Are we showing the remaining xp?
-		if self.db.profile.ShowRemaining then
-				XPBarNoneR:Show()
-		else
-				XPBarNoneR:Hide()
-		end
-	end
-
-	XPBarNoneA:SetMinMaxValues(min(0, self.cXP), self.nXP)
-	XPBarNoneA:SetValue(self.cXP)
-
-	-- Are we hiding the text or not?
-	if not self.db.profile.HideText then
-		XPBarNoneText:SetText(GetXPText(restedXP))
-	else
-		XPBarNoneText:SetText("")
-	end
-end
-
--- Reputation Colours, in HEX.																									       
---[[local RepHexColours = {}
-for i = 1, 8 do
-	local fbc = FACTION_BAR_COLORS[i]
-	RepHexColours[i] = sformat("%2x%2x%2x", fbc.r * 255, fbc.g * 255, fbc.b * 255)																		       
-end
-
--- Generate a coloured text string for the tooltip text.
-local function GetRepHexColour(standing, text)
-	local hex = RepHexColours[standing]
-
-	return sformat("|cff%s%s|r", hex, text)
-end]]
-
--- Utility functions for the Dewdrop menu
+-- Get the text for the rep tooltip
 local function GetRepTooltipText(standingText, bottom, top, earned)
 	local maxRep = top - bottom
 	local curRep = earned - bottom
 	local repPercent = curRep / maxRep * 100
 
-	return sformat("Standing: %s\nRep: %s/%s [%.1f%%]", standingText, commify(curRep), commify(maxRep), repPercent)
+	return string_format("Standing: %s\nRep: %s/%s [%.1f%%]", standingText, commify(curRep), commify(maxRep), repPercent)
 end
 
-local function ToggleCollapse(faction, isCollapsed)
+-- Toggle the collapsed sections in the rep menu
+function XPBarNone:ToggleCollapse(faction)
+	local isCollapsed = select(10, GetFactionInfo(faction))
 	if isCollapsed then
 		ExpandFactionHeader(faction)
 	else
@@ -1041,139 +733,402 @@ local function ToggleCollapse(faction, isCollapsed)
 	end
 end
 
-function XPBarNone:DewdropFactionsMenu()
-	-- Menu Header
-	dewdrop:AddLine(
-		'text', L["Faction Listing"],
-		'isTitle', true,
-		'justifyH', "CENTER",
-		'notCheckable', true,
-		'textHeight', 14,
-		'textR', 1,
-		'textG', 1,
-		'textB', 1
-	)
+function XPBarNone:SetWatchedFactionIndex(faction)
+	SetWatchedFactionIndex(faction)
+end
 
-	-- Create menu
+-- Get hex colours
+local function GetRepHexColour(standing)
+	return string_format("|cff%s", RepHexColours[standing])
+end
+
+-- Setup Rep colours
+function XPBarNone:GenHexColours()
+	for i = 1, 8 do
+		local fbc
+		if i == 8 then
+			fbc = db.colours.exalted
+		else
+			fbc = FACTION_BAR_COLORS[i]
+		end
+		RepHexColours[i] = string_format("%2x%2x%2x", fbc.r * 255, fbc.g * 255, fbc.b * 255)
+	end
+end
+
+-- OK, main functions.
+-- XPBar creation
+function XPBarNone:CreateXPBar()
+	-- Check if the bar already exists before proceeding.
+	if self.frame then return end
+
+	-- Main Frame
+	self.frame = CreateFrame("Frame", "XPBarNoneFrame", UIParent)
+	self.frame:SetFrameStrata(db.general.strata)
+	self.frame:SetMovable(true)
+	self.frame:Hide()
+
+	if db.general.scale then
+		self.frame:SetScale(db.general.scale)
+	end
+
+	self.frame:ClearAllPoints()
+	if not db.general.posx then
+		self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+	else
+		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", db.general.posx, db.general.posy)
+	end
+	self.frame:SetWidth(db.general.width)
+	self.frame:SetHeight(db.general.height)
+
+	self.frame:SetBackdrop({
+		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+		edgeSize = 12,
+		insets = { left = 5, right = 5, top = 5, bottom = 5, },
+	})
+
+	-- Button
+	self.frame.button = CreateFrame("Button", "XPBarNoneButton", self.frame)
+	self.frame.button:SetAllPoints(self.frame)
+	self.frame.button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	self.frame.button:RegisterForDrag("LeftButton")
+	self.frame.button:SetScript("OnClick", function()
+		-- Paste currently displayed text to edit box on Shift-LeftClick
+		if IsShiftKeyDown() and arg1 == "LeftButton" then
+			if not ChatFrameEditBox:IsVisible() then
+				ChatFrameEditBox:Show()
+			end
+			ChatFrameEditBox:Insert(self.frame.bartext:GetText())
+		end
+		-- Display options on Shift-RightClick
+		if IsShiftKeyDown() and arg1 == "RightButton" then
+			InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame)
+		end
+		-- Display Reputation menu on Ctrl-RightClick
+		if IsControlKeyDown() and arg1 == "RightButton" then
+			self:MakeRepTooltip()
+		end
+	end)
+	self.frame.button:SetScript("OnDragStart", function()
+		if not db.general.locked then
+			self.frame:StartMoving()
+		end
+	end)
+	self.frame.button:SetScript("OnDragStop", function()
+		self.frame:StopMovingOrSizing()
+		self:SavePosition()
+	end)
+	self.frame.button:SetScript("OnEnter", function()
+		if db.general.mouseover and not IsShiftKeyDown() and not IsControlKeyDown() then
+			self:ToggleShowReputation()
+		else
+			mouseovershift = true
+		end
+	end)
+	self.frame.button:SetScript("OnLeave", function()
+		if db.general.mouseover and not mouseovershift then
+			self:ToggleShowReputation()
+		else
+			mouseovershift = nil
+		end
+	end)
+
+	-- Background
+	self.frame.background = CreateFrame("StatusBar", "XPBarNoneBackground", self.frame)
+	self.frame.background:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
+	self.frame.background:SetWidth(self.frame:GetWidth() - 4)
+	self.frame.background:SetHeight(self.frame:GetHeight() - 8)
+
+	-- XP Bar
+	self.frame.xpbar = CreateFrame("StatusBar", "XPBarNoneXPBar", self.frame)
+	self.frame.xpbar:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
+	self.frame.xpbar:SetWidth(self.frame:GetWidth() - 4)
+	self.frame.xpbar:SetHeight(self.frame:GetHeight() - 8)
+
+	-- Remaining Rested XP Bar
+	self.frame.remaining = CreateFrame("StatusBar", "XPBarNoneRemaining", self.frame)
+	self.frame.remaining:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
+	self.frame.remaining:SetWidth(self.frame:GetWidth() - 4)
+	self.frame.remaining:SetHeight(self.frame:GetHeight() - 8)
+
+	-- Bubbles
+	self.frame.bubbles = CreateFrame("StatusBar", "XPBarNoneBubbles", self.frame)
+	self.frame.bubbles:SetStatusBarTexture("Interface\\AddOns\\XPBarNone\\Textures\\bubbles")
+	self.frame.bubbles:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
+	self.frame.bubbles:SetWidth(self.frame:GetWidth() - 4)
+	self.frame.bubbles:SetHeight(self.frame:GetHeight() - 8)
+
+	-- XP Bar Text
+	self.frame.bartext = self.frame.button:CreateFontString("XPBarNoneText", "OVERLAY")
+	self:SetFontOptions()
+	self.frame.bartext:SetShadowOffset(1, -1)
+	self:SetTextPosition(db.general.textposition)
+	self.frame.bartext:SetTextColor(1, 1, 1, 1)
+
+	-- Set frame levels.
+	self.frame:SetFrameLevel(0)
+	self.frame.background:SetFrameLevel(self.frame:GetFrameLevel() + 1)
+	self.frame.remaining:SetFrameLevel(self.frame:GetFrameLevel() + 2)
+	self.frame.xpbar:SetFrameLevel(self.frame:GetFrameLevel() + 3)
+	self.frame.bubbles:SetFrameLevel(self.frame:GetFrameLevel() + 4)
+	self.frame.button:SetFrameLevel(self.frame:GetFrameLevel() + 5)
+
+	self:SetTexture(db.general.texture)
+	self:ToggleBubbles()
+	self:ToggleClamp()
+	self:RestorePosition()
+	
+	-- Kill function after the bar is made.
+	XPBarNone.CreateXPBar = nil
+end
+
+-- LSM3 Updates.
+function XPBarNone:MediaUpdate()
+
+end
+
+-- Check for faction updates for the auto rep watching
+function XPBarNone:COMBAT_TEXT_UPDATE(msgtype, faction, amount)
+	-- Abort if it's not a FACTION update
+	if msgtype ~= "FACTION" then
+		return
+	end
+	if db.rep.autowatchrep then
+		-- We don't want to watch factions we're losing rep with
+		if string_match(amount, "^%-.*") then
+			return
+		end
+
+		-- Everything ok? Watch the faction!
+		SetWatchedFactionName(faction)
+	end
+end
+
+function XPBarNone:UpdateXPData()
+	local prevXP = self.cXP or 0
+	self.cXP = UnitXP("player")
+	self.nXP = UnitXPMax("player")
+	self.remXP = self.nXP - self.cXP
+	self.diffXP = self.cXP - prevXP
+
+	if self.diffXP > 0 then
+		lastXPValues[math_mod(sessionkills, 10) + 1] = self.diffXP
+		sessionkills = sessionkills + 1
+	end
+
+	self:UpdateXPBar()
+end
+
+function XPBarNone:UpdateRepData()
+	if not db.rep.showrepbar then
+		return
+	end
+
+	local repName, repStanding, repMin, repMax, repValue = GetWatchedFactionInfo()
+
+	if repName == nil then
+		if self.frame.xpbar:IsVisible() then
+			self.frame.xpbar:Hide()
+		end
+		self.frame.bartext:SetText(L["You need to select a faction to watch."])
+		return
+	end
+
+	repMax = repMax - repMin
+	repValue = repValue - repMin
+	repMin = 0
+
+	if not self.frame.xpbar:IsVisible() then
+		self.frame.xpbar:Show()
+	end
+
+	self.frame.remaining:Hide()
+	self.frame.xpbar:SetMinMaxValues(math_min(0, repValue), repMax)
+	self.frame.xpbar:SetValue(repValue)
+
+	-- Use our own colour for exalted.
+	local repColour
+	if repStanding == 8 then
+		repColour = db.colours.exalted
+	else
+		repColour = FACTION_BAR_COLORS[repStanding]
+	end
+	self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
+
+	if not db.general.hidetext then
+		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue))
+	else
+		self.frame.bartext:SetText("")
+	end
+end
+
+function XPBarNone:UpdateXPBar()
+	-- menu refresh function
+	if LQT:IsAcquired("XPBarNoneTT") then
+		self:MakeRepTooltip()
+	end
+
+	if db.rep.showrepbar then
+		self:UpdateRepData()
+		return
+	else
+		if not self.frame.xpbar:IsVisible() then
+			self.frame.xpbar:Show()
+		end
+	end
+
+	local restedXP = GetXPExhaustion()
+
+	if restedXP == nil then
+		if self.frame.remaining:IsVisible() then
+			self.frame.remaining:Hide()
+		end
+		local normal = db.colours.normal
+		self.frame.xpbar:SetStatusBarColor(normal.r, normal.g, normal.b, normal.a)
+	else
+		self.frame.remaining:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
+		self.frame.remaining:SetValue(self.cXP + restedXP)
+
+		local remaining = db.colours.remaining
+		self.frame.remaining:SetStatusBarColor(remaining.r, remaining.g, remaining.b, remaining.a)
+
+		-- Do we want to indicate rest?
+		if IsResting() and db.general.indicaterest then
+			local resting = db.colours.resting
+			self.frame.xpbar:SetStatusBarColor(resting.r, resting.g, resting.b, resting.a)
+		else
+			local rested = db.colours.rested
+			self.frame.xpbar:SetStatusBarColor(rested.r, rested.g, rested.b, rested.a)
+		end
+
+		-- Show remaining rested XP?
+		if db.xp.showremaining then
+			self.frame.remaining:Show()
+		else
+			self.frame.remaining:Hide()
+		end
+	end
+
+	self.frame.xpbar:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
+	self.frame.xpbar:SetValue(self.cXP)
+
+	-- Hide the text or not?
+	if not db.general.hidetext then
+		self.frame.bartext:SetText(GetXPText(restedXP))
+	else
+		self.frame.bartext:SetText("")
+	end
+end
+
+-- When max level is hit, show only the rep bar.
+function XPBarNone:LevelUp(level)
+	if level == maxPlayerLevel then
+		db.rep.showrepbar = true
+		db.general.mouseover = false
+	end
+	self:UpdateXPBar()
+end
+
+-- Dynamic bars, switch between rep/level when using a single profile for all char.s
+function XPBarNone:UpdateDynamicBars()
+	if UnitLevel("player") == maxPlayerLevel then
+		db.rep.showrepbar = true
+		db.general.mouseover = false
+	else
+		db.rep.showrepbar = false
+		db.general.mouseover = true
+	end
+end
+
+-- Setup tips, etc.
+function XPBarNone:MakeRepTooltip()
+	if not LQT:IsAcquired("XPBarNoneTT") then
+		tooltip = LQT:Acquire("XPBarNoneTT", 2, "CENTER", "LEFT")
+	end
+	tooltip:Clear()
+	tooltip:Hide()
+	tooltip:SetScale(1)
+	self:DrawRepMenu()
+	tooltip:SetAutoHideDelay(1, self.frame.button)
+	tooltip:EnableMouse()
+	tooltip:SmartAnchorTo(self.frame.button)
+	tooltip:UpdateScrolling()
+	tooltip:Show()
+end
+
+-- Reputation menu
+function XPBarNone:DrawRepMenu()
+	local linenum
+	local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:24:24:1:-1|t"
+	tooltip:Hide()
+	tooltip:Clear()
+
+	--Header
+	linenum = tooltip:AddLine(nil)
+	tooltip:SetCell(linenum, 1, L["Faction Listing"], tooltip:GetHeaderFont(), "CENTER", 2)
+
+	-- Reputations
 	for faction = 1, GetNumFactions() do
-		-- GetFactionInfo() returns
-		---- name, description, standingId, bottomValue, topValue, earnedValue, atWarWith,
-		---- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild
-		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,_,isWatched = GetFactionInfo(faction)
-
+		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,_,isWatched,isChild = GetFactionInfo(faction)
 		if not isHeader then
+			-- Faction
 			local repColour
 			if standing == 8 then
-				repColour = self.db.profile.exalted
+				repColour = db.colours.exalted
 			else
 				repColour = FACTION_BAR_COLORS[standing]
 			end
 			local standingText = _G["FACTION_STANDING_LABEL"..standing]
-			--local tipText = GetRepTooltipText(GetRepHexColour(standing, standingText), bottom, top, earned)
 			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
 
-			dewdrop:AddLine(
-				'text', sformat("%s (%s)", name, standingText),
-				'textHeight', 12,
-				'textR', repColour.r,
-				'textG', repColour.g,
-				'textB', repColour.b,
-				'checked', isWatched,
-				'func', SetWatchedFactionIndex,
-				'arg1', faction,
-				'tooltipTitle', name,
-				'tooltipText', tipText --,
-				--'icon', not isWatched and (atWar and "Interface\\Buttons\\UI-Checkbox-SwordCheck"),
-				--'iconWidth', 32
-				--'iconHeight', 32
-			)
+			linenum = tooltip:AddLine(nil)
+			tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ")
+			tooltip:SetCell(linenum, 2, string_format("%s%s (%s)|r", GetRepHexColour(standing), name, standingText), GameTooltipTextSmall)
+			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
+			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
+			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
 		else
+			-- Header
 			local tipText, iconPath
-
-			-- If we're collapsed, play with the name and set a different tipText
 			if isCollapsed then
-				tipText = sformat(L["Click to expand %s faction listing"], name)
-				iconPath = "Interface\\Buttons\\UI-PlusButton-Up"
+				tipText = string_format(L["Click to expand %s faction listing"], name)
+				iconPath = "|TInterface\\Buttons\\UI-PlusButton-Up:24:24:1:-1|t"
 			else
-				tipText = sformat(L["Click to collapse %s faction listing"], name)
-				iconPath = "Interface\\Buttons\\UI-MinusButton-Up"
+				tipText = string_format(L["Click to collapse %s faction listing"], name)
+				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:24:24:1:-1|t"
 			end
 
-			dewdrop:AddLine(
-				'text', name,
-				'textHeight', 14,
-				'checked', true,
-				'checkIcon', iconPath,
-				'justifyH', "LEFT",
-				'func', ToggleCollapse,
-				'arg1', faction,
-				'arg2', isCollapsed,
-				'tooltipTitle', name,
-				'tooltipText', tipText
-			)
+			linenum = tooltip:AddLine(iconPath, name)
+			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, faction)
+			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
+			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
 		end
 	end
 
-	-- Add a hint
-	dewdrop:AddLine(
-		'text', L["Hint: Click to set watched faction."],
-		'notClickable', true,
-		'notCheckable', true,
-		'justifyH', "CENTER",
-		'textR', 0,
-		'textG', 1,
-		'textB', 0
-	)
+	-- Hint
+	linenum = tooltip:AddLine(nil)
+	tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", nil, "CENTER", 2)
 end
 
+-- Bar positioning.
 function XPBarNone:SavePosition()
-	local x, y = XPBarNoneFrame:GetLeft(), XPBarNoneFrame:GetTop()
-	local s = XPBarNoneFrame:GetEffectiveScale()
+	local x, y = self.frame:GetLeft(), self.frame:GetTop()
+	local s = self.frame:GetEffectiveScale()
 
 	x, y = x*s, y*s
 
-	self.db.profile.PosX = x
-	self.db.profile.PosY = y
+	db.general.posx = x
+	db.general.posy = y
 end
 
 function XPBarNone:RestorePosition()
-	local x = self.db.profile.PosX
-	local y = self.db.profile.PosY
+	local x = db.general.posx
+	local y = db.general.posy
 	if not x or not y then return end
 
-	local s = XPBarNoneFrame:GetEffectiveScale()
+	local s = self.frame:GetEffectiveScale()
 
 	x, y = x/s, y/s
 
-	XPBarNoneFrame:ClearAllPoints()
-	XPBarNoneFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+	self.frame:ClearAllPoints()
+	self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
 end
-
---[[function XPBarNone:SetOrientation()
-	local orientation = self.db.profile.Orientation
-	local width, height
-	if orientation == "HORIZONTAL" then
-		width = self.db.profile.Width
-		height = self.db.profile.Height
-	else
-		width = self.db.profile.Height
-		height = self.db.profile.Width
-	end
-
-	XPBarNoneFrame:SetWidth(width)
-	XPBarNoneB:SetWidth(width - 4)
-	XPBarNoneA:SetWidth(width - 4)
-	XPBarNoneR:SetWidth(width - 4)
-	XPBarNoneBubbles:SetWidth(width - 4)
-
-	XPBarNoneFrame:SetHeight(height - 8)
-	XPBarNoneB:SetHeight(height - 8)
-	XPBarNoneA:SetHeight(height - 8)
-	XPBarNoneR:SetHeight(height - 8)
-	XPBarNoneBubbles:SetHeight(height - 8)
-	
-	XPBarNoneB:SetOrientation(orientation)
-	XPBarNoneA:SetOrientation(orientation)
-	XPBarNoneR:SetOrientation(orientation)
-	XPBarNoneBubbles:SetOrientation(orientation)
-end]]
