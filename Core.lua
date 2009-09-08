@@ -528,6 +528,15 @@ function XPBarNone:ToggleShowReputation()
 	self:UpdateXPBar()
 end
 
+-- Toggle auto watching
+function XPBarNone:ToggleAutoWatch()
+	if db.rep.autowatchrep then
+		self:RegisterEvent("COMBAT_TEXT_UPDATE")
+	else
+		self:UnregisterEvent("COMBAT_TEXT_UPDATE")
+	end
+end
+
 -- Refreshes the config for profiles support, NYI
 function XPBarNone:RefreshConfig()
 	self.frame:SetFrameStrata(db.general.strata)
@@ -894,7 +903,7 @@ function XPBarNone:MediaUpdate()
 end
 
 -- Check for faction updates for the auto rep watching
-function XPBarNone:COMBAT_TEXT_UPDATE(msgtype, faction, amount)
+function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
 	-- Abort if it's not a FACTION update
 	if msgtype ~= "FACTION" then
 		return
@@ -1027,7 +1036,7 @@ function XPBarNone:UpdateXPBar()
 end
 
 -- When max level is hit, show only the rep bar.
-function XPBarNone:LevelUp(level)
+function XPBarNone:LevelUp(event, level)
 	if level == maxPlayerLevel then
 		db.rep.showrepbar = true
 		db.general.mouseover = false
@@ -1064,17 +1073,17 @@ end
 
 -- Reputation menu
 function XPBarNone:DrawRepMenu()
-	local linenum
+	local linenum = nil
 	local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:24:24:1:-1|t"
 	local NormalFont = tooltip:GetFont()
-	local HeaderFont = tooltip:GetHeaderFont()
+	--local HeaderFont = tooltip:GetHeaderFont()
 
 	tooltip:Hide()
 	tooltip:Clear()
 
 	--Header
-	linenum = tooltip:AddLine(nil)
-	tooltip:SetCell(linenum, 1, L["Faction Listing"], HeaderFont, "CENTER", 2)
+	--linenum = tooltip:AddLine(nil)
+	--tooltip:SetCell(linenum, 1, L["Faction Listing"], HeaderFont, "CENTER", 2)
 
 	-- Reputations
 	for faction = 1, GetNumFactions() do
@@ -1107,7 +1116,10 @@ function XPBarNone:DrawRepMenu()
 				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:24:24:1:-1|t"
 			end
 
-			linenum = tooltip:AddLine(iconPath, name)
+			--linenum = tooltip:AddLine(iconPath, name)
+			linenum = tooltip:AddLine(nil)
+			tooltip:SetCell(linenum, 1, iconPath, NormalFont)
+			tooltip:SetCell(linenum, 2, name, NormalFont)
 			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, faction)
 			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
 			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
@@ -1115,8 +1127,8 @@ function XPBarNone:DrawRepMenu()
 	end
 
 	-- Hint
-	linenum = tooltip:AddLine(nil)
-	tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", NormalFont, "CENTER", 2)
+	--linenum = tooltip:AddLine(nil)
+	--tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", NormalFont, "CENTER", 2)
 end
 
 -- Bar positioning.
