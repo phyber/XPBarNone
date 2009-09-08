@@ -489,10 +489,10 @@ end
 
 function XPBarNone:SetHeight(height)
 	self.frame:SetHeight(height)
-	self.frame.background:SetHeight(height - 4)
-	self.frame.remaining:SetHeight(height - 4)
-	self.frame.xpbar:SetHeight(height - 4)
-	self.frame.bubbles:SetHeight(height - 4)
+	self.frame.background:SetHeight(height - 8)
+	self.frame.remaining:SetHeight(height - 8)
+	self.frame.xpbar:SetHeight(height - 8)
+	self.frame.bubbles:SetHeight(height - 8)
 end
 
 -- Toggle the border
@@ -538,7 +538,8 @@ function XPBarNone:ToggleAutoWatch()
 end
 
 -- Refreshes the config for profiles support, NYI
-function XPBarNone:RefreshConfig()
+function XPBarNone:RefreshConfig(event, database, newProfileKey)
+	db = database.profile
 	self.frame:SetFrameStrata(db.general.strata)
 	self.frame:SetScale(db.general.scale)
 	self:SetWidth(db.general.width)
@@ -584,8 +585,7 @@ function XPBarNone:OnEnable()
 	if self.CreateXPBar then
 		self:CreateXPBar()
 	end
-	-- Set the options on the bar.
-	self:RefreshConfig()
+	self:GenHexColours()
 	-- XP Events
 	self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
 	self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
@@ -891,6 +891,7 @@ function XPBarNone:CreateXPBar()
 	self:SetTexture(db.general.texture)
 	self:ToggleBubbles()
 	self:ToggleClamp()
+	self:ToggleBorder()
 	self:RestorePosition()
 	
 	-- Kill function after the bar is made.
