@@ -556,7 +556,7 @@ end
 
 function XPBarNone:OnInitialize()
 	-- Get the DB.
-	self.db = LibStub("AceDB-3.0"):New("XPBarNoneDB", defaults, "Defaults")
+	self.db = LibStub("AceDB-3.0"):New("XPBarNoneDB", defaults, true)
 	db = self.db.profile
 	-- Register options
 	local myName = GetAddOnMetadata("XPBarNone", "Title")
