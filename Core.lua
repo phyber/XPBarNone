@@ -226,13 +226,20 @@ local function GetOptions(uiTypes, uiName, appName)
 					min = 5,
 					max = 30,
 					step = 1,
-					bigStep = 5,
+					set = function(info, value)
+						db.general.fontsize = value
+						self:SetFontOptions()
+					end,
 				},
 				fontoutline = {
 					name = L["Font Outline"],
 					desc = L["Toggles the font outline."],
 					type = "toggle",
 					order = 1000,
+					set = function(info, value)
+						db.general.fontoutline = value
+						self:SetFontOptions()
+					end,
 				},
 				textposition = {
 					name = L["Text Position"],
@@ -1059,12 +1066,15 @@ end
 function XPBarNone:DrawRepMenu()
 	local linenum
 	local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:24:24:1:-1|t"
+	local NormalFont = tooltip:GetFont()
+	local HeaderFont = tooltip:GetHeaderFont()
+
 	tooltip:Hide()
 	tooltip:Clear()
 
 	--Header
 	linenum = tooltip:AddLine(nil)
-	tooltip:SetCell(linenum, 1, L["Faction Listing"], tooltip:GetHeaderFont(), "CENTER", 2)
+	tooltip:SetCell(linenum, 1, L["Faction Listing"], HeaderFont, "CENTER", 2)
 
 	-- Reputations
 	for faction = 1, GetNumFactions() do
@@ -1106,7 +1116,7 @@ function XPBarNone:DrawRepMenu()
 
 	-- Hint
 	linenum = tooltip:AddLine(nil)
-	tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", tooltip:GetFont(), "CENTER", 2)
+	tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", NormalFont, "CENTER", 2)
 end
 
 -- Bar positioning.
