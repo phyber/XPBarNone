@@ -119,6 +119,11 @@ local defaults = {
 			background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
 			exalted = { r = 0, g = 0.77, b = 0.63, a = 1 },
 		},
+		-- Reputation menu options
+		repmenu = {
+			scale = 1,
+			autohidedelay = 1,
+		},
 	}
 }
 -- Return an options table.
@@ -352,7 +357,7 @@ local function GetOptions(uiTypes, uiName, appName)
 	if appName == "XPBarNone-Rep" then
 		local options = {
 			type = "group",
-			name = L["Reputation"],
+			name = L["Reputation Bar"],
 			get = function(info) return db.rep[info[#info]] end,
 			set = function(info, value)
 				db.rep[info[#info]] = value 
@@ -397,7 +402,7 @@ local function GetOptions(uiTypes, uiName, appName)
 	if appName == "XPBarNone-Colours" then
 		local options = {
 			type = "group",
-			name = "Colours",
+			name = L["Bar Colours"],
 			get = function(info) 
 				return db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a or 1
 			end,
@@ -409,7 +414,7 @@ local function GetOptions(uiTypes, uiName, appName)
 				coloursdesc = {
 					type = "description",
 					order = 0,
-					name = "Set the colours for various XPBarNone bars.",
+					name = L["Set the colours for various XPBarNone bars."],
 				},
 				normal = {
 					name = L["Normal"],
@@ -447,6 +452,39 @@ local function GetOptions(uiTypes, uiName, appName)
 					hasAlpha = false,
 				},
 			},
+		}
+		return options
+	end
+	if appName == "XPBarNone-RepMenu" then
+		local options = {
+			type = "group",
+			name = L["Reputation Menu"],
+			get = function(info) return db.repmenu[info[#info]] end,
+			set = function(info, value) db.repmenu[info[#info]] = value end,
+			args = {
+				repmenudesc = {
+					type = "description",
+					order = 0,
+					name = L["Configure the reputation menu."],
+				},
+				scale = {
+					name = L["Scale"],
+					desc = L["Set the scale of the reputation menu."],
+					type = "range",
+					order = 100,
+					min = 0.5,
+					max = 5,
+					step = 1,
+				},
+				autohidedelay = {
+					name = L["Auto Hide Delay"],
+					desc = L["Set the length of time (in seconds) it takes for the menu to disappear once you move the mouse away."],
+					type = "range",
+					order = 200,
+					min = 0,
+					max = 5,
+				},
+			}
 		}
 		return options
 	end
@@ -560,20 +598,24 @@ function XPBarNone:OnInitialize()
 	db = self.db.profile
 	-- Register options
 	local myName = GetAddOnMetadata("XPBarNone", "Title")
-	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-General", GetOptions)
-	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-XP", GetOptions)
-	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-Rep", GetOptions)
-	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-Colours", GetOptions)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-General", myName)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-XP", "XP", myName)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-Rep", "Reputation", myName)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-Colours", "Colours", myName)
+	local ACRegistry = LibStub("AceConfigRegistry-3.0")
+	local ACDialog = LibStub("AceConfigDialog-3.0")
+	ACRegistry:RegisterOptionsTable("XPBarNone-General", GetOptions)
+	ACRegistry:RegisterOptionsTable("XPBarNone-XP", GetOptions)
+	ACRegistry:RegisterOptionsTable("XPBarNone-Rep", GetOptions)
+	ACRegistry:RegisterOptionsTable("XPBarNone-Colours", GetOptions)
+	ACRegistry:RegisterOptionsTable("XPBarNone-RepMenu", GetOptions)
+	ACDialog:AddToBlizOptions("XPBarNone-General", myName)
+	ACDialog:AddToBlizOptions("XPBarNone-XP", L["XP Bar"], myName)
+	ACDialog:AddToBlizOptions("XPBarNone-Rep", L["Reputation Bar"], myName)
+	ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
+	ACDialog:AddToBlizOptions("XPBarNone-RepMenu", L["Reputation Menu"], myName)
 	-- Register a chat command to open options
 	self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame) end)
 	-- Profiles
 	local popts = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
-	LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("XPBarNone-Profiles", popts)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("XPBarNone-Profiles", "Profiles", myName)
+	ACRegistry:RegisterOptionsTable("XPBarNone-Profiles", popts)
+	ACDialog:AddToBlizOptions("XPBarNone-Profiles", L["Profiles"], myName)
 	-- For profile support. NYI
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
@@ -598,7 +640,7 @@ function XPBarNone:OnEnable()
 		self:RegisterEvent("COMBAT_TEXT_UPDATE")
 	end
 	-- Register some LSM3 callbacks
-	LSM3.RegisterCallback(self, "LibSharedMedia_Registered", "MediaUpdate")
+	--LSM3.RegisterCallback(self, "LibSharedMedia_Registered", "MediaUpdate")
 	LSM3.RegisterCallback(self, "LibSharedMedia_SetGlobal", function(callback, mtype, override)
 		if mtype == "statusbar" and override ~= nil then
 			self:SetTexture(override)
@@ -736,7 +778,7 @@ local function GetRepTooltipText(standingText, bottom, top, earned)
 	local curRep = earned - bottom
 	local repPercent = curRep / maxRep * 100
 
-	return string_format("Standing: %s\nRep: %s/%s [%.1f%%]", standingText, commify(curRep), commify(maxRep), repPercent)
+	return string_format(L["Standing: %s\nRep: %s/%s [%.1f%%]"], standingText, commify(curRep), commify(maxRep), repPercent)
 end
 
 -- Toggle the collapsed sections in the rep menu
@@ -979,7 +1021,7 @@ function XPBarNone:UpdateRepData()
 end
 
 function XPBarNone:UpdateXPBar()
-	-- menu refresh function
+	-- If the menu is open and we're in here, refresh the menu.
 	if LQT:IsAcquired("XPBarNoneTT") then
 		self:MakeRepTooltip()
 	end

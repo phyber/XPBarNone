@@ -74,3 +74,16 @@ L["Select the position of the text on XPBarNone."] = true
 L["Background Colour"] = true
 L["Set the colour of the background bar."] = true
 L["Set the colour of the Exalted reputation bar."] = true
+-- Menu sections
+L["XP Bar"] = true
+L["Reputation Bar"] = true
+L["Reputation Menu"] = true
+L["Configure the reputation menu."] = true
+L["Set the scale of the reputation menu."] = true
+L["Auto Hide Delay"] = true
+L["Set the length of time (in seconds) it takes for the menu to disappear once you move the mouse away."] = true
+L["Bar Colours"] = true
+L["Set the colours for various XPBarNone bars."] = true
+L["Profiles"] = true
+-- Rep tooltip
+L["Standing: %s\nRep: %s/%s [%.1f%%]"] = true
