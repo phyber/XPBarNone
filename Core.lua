@@ -473,8 +473,8 @@ local function GetOptions(uiTypes, uiName, appName)
 					type = "range",
 					order = 100,
 					min = 0.5,
-					max = 5,
-					step = 1,
+					max = 2,
+					step = 0.5,
 				},
 				autohidedelay = {
 					name = L["Auto Hide Delay"],
@@ -1105,9 +1105,9 @@ function XPBarNone:MakeRepTooltip()
 	end
 	tooltip:Clear()
 	tooltip:Hide()
-	tooltip:SetScale(1)
+	tooltip:SetScale(db.repmenu.scale)
 	self:DrawRepMenu()
-	tooltip:SetAutoHideDelay(1, self.frame.button)
+	tooltip:SetAutoHideDelay(db.repmenu.autohidedelay, self.frame.button)
 	tooltip:EnableMouse()
 	tooltip:SmartAnchorTo(self.frame.button)
 	tooltip:UpdateScrolling()
