@@ -590,6 +590,7 @@ function XPBarNone:RefreshConfig(event, database, newProfileKey)
 	self:ToggleClamp()
 	self:GenHexColours()
 	self:RestorePosition()
+	self:UpdateXPBar()
 end
 
 function XPBarNone:OnInitialize()
