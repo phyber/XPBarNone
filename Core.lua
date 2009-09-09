@@ -1051,7 +1051,7 @@ function XPBarNone:UpdateXPBar()
 		self.frame.remaining:SetStatusBarColor(remaining.r, remaining.g, remaining.b, remaining.a)
 
 		-- Do we want to indicate rest?
-		if IsResting() and db.general.indicaterest then
+		if IsResting() and db.xp.indicaterest then
 			local resting = db.colours.resting
 			self.frame.xpbar:SetStatusBarColor(resting.r, resting.g, resting.b, resting.a)
 		else
