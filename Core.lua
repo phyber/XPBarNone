@@ -1024,7 +1024,7 @@ end
 function XPBarNone:UpdateXPBar()
 	-- If the menu is open and we're in here, refresh the menu.
 	if LQT:IsAcquired("XPBarNoneTT") then
-		self:MakeRepTooltip()
+		self:DrawRepMenu()
 	end
 
 	if db.rep.showrepbar then
@@ -1099,18 +1099,35 @@ function XPBarNone:UpdateDynamicBars()
 	end
 end
 
+-- Mainly from LibQTip
+local function GetTipAnchor(frame, tooltip)
+	local uiScale = UIParent:GetEffectiveScale()
+	local ttWidth = tooltip:GetWidth() / 2
+	local x, y = GetCursorPosition()
+	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
+	-- Always use the LEFT of the bar as the anchor
+	local hhalf = "LEFT"
+	local vhalf = ((y / uiScale) > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
+	local fX, fY = (x /uiScale) - ttWidth, y/uiScale
+	--XPBarNone:Print(string_format("Anchoring: %s %s %s %s %s", vhalf..hhalf, frame:GetName(), (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, fY))
+	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, 0
+end
+
 -- Setup tips, etc.
 function XPBarNone:MakeRepTooltip()
 	if not LQT:IsAcquired("XPBarNoneTT") then
 		tooltip = LQT:Acquire("XPBarNoneTT", 2, "CENTER", "LEFT")
 	end
+	tooltip:SetClampedToScreen(true)
 	tooltip:Clear()
 	tooltip:Hide()
 	tooltip:SetScale(db.repmenu.scale)
 	self:DrawRepMenu()
 	tooltip:SetAutoHideDelay(db.repmenu.autohidedelay, self.frame.button)
 	tooltip:EnableMouse()
-	tooltip:SmartAnchorTo(self.frame.button)
+	-- Anchor to the cursor position along the bar.
+	tooltip:ClearAllPoints()
+	tooltip:SetPoint(GetTipAnchor(self.frame.button, tooltip))
 	tooltip:UpdateScrolling()
 	tooltip:Show()
 end
@@ -1170,6 +1187,7 @@ function XPBarNone:DrawRepMenu()
 		end
 	end
 
+	tooltip:Show()
 	-- Hint
 	--linenum = tooltip:AddLine(nil)
 	--tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", NormalFont, "CENTER", 2)
