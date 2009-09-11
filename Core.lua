@@ -1102,13 +1102,24 @@ end
 -- Mainly from LibQTip
 local function GetTipAnchor(frame, tooltip)
 	local uiScale = UIParent:GetEffectiveScale()
-	local ttWidth = tooltip:GetWidth() / 2
+	local uiWidth = UIParent:GetWidth()
+	local ttWidth = tooltip:GetWidth()
 	local x, y = GetCursorPosition()
 	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
 	-- Always use the LEFT of the bar as the anchor
 	local hhalf = "LEFT"
 	local vhalf = ((y / uiScale) > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
-	local fX, fY = (x /uiScale) - ttWidth, y/uiScale
+	local fX, fY = (x / uiScale) - (ttWidth / 2), y / uiScale
+	-- OK, since :SetClampedToScreen is stupid, we'll check if the tooltip goes off the screen manually.
+	-- OK, if it's less than 0, it's gone off the left edge.
+	if fX < 0 then
+		fX = 0
+	end
+	-- If it's greater than the size of the screen, it's off to the right
+	-- Move it back in by a few pixels.
+	if (x / uiScale) + (ttWidth / 2) > uiWidth then
+		fX = fX - ((x / uiScale) + (ttWidth / 2) - uiWidth)
+	end
 	--XPBarNone:Print(string_format("Anchoring: %s %s %s %s %s", vhalf..hhalf, frame:GetName(), (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, fY))
 	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, 0
 end
