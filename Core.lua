@@ -118,6 +118,8 @@ local defaults = {
 			remaining = { r = 0.82, g = 0, b = 0, a = 1 },
 			background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
 			exalted = { r = 0, g = 0.77, b = 0.63, a = 1 },
+			xptext = { r = 1, g = 1, b = 1, a = 1 },
+			reptext = { r = 1, g = 1, b = 1, a = 1 },
 		},
 		-- Reputation menu options
 		repmenu = {
@@ -449,6 +451,20 @@ local function GetOptions(uiTypes, uiName, appName)
 					desc = L["Set the colour of the Exalted reputation bar."],
 					type = "color",
 					order = 500,
+					hasAlpha = false,
+				},
+				xptext = {
+					name = "XP Text",
+					desc = "Set the colour of the XP text.",
+					type = "color",
+					order = 600,
+					hasAlpha = false,
+				},
+				reptext = {
+					name = "Rep Text",
+					desc = "Set the colour of the Reputation text.",
+					type = "color",
+					order = 700,
 					hasAlpha = false,
 				},
 			},
@@ -987,6 +1003,10 @@ function XPBarNone:UpdateRepData()
 
 	local repName, repStanding, repMin, repMax, repValue = GetWatchedFactionInfo()
 
+	-- Set the colour of the bar text.
+	local txtcol = db.colours.reptext
+	self.frame.bartext:SetTextColor(txtcol.r, txtcol.g, txtcol.b, txtcol.a)
+
 	if repName == nil then
 		if self.frame.xpbar:IsVisible() then
 			self.frame.xpbar:Hide()
@@ -1072,6 +1092,10 @@ function XPBarNone:UpdateXPBar()
 
 	self.frame.xpbar:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
 	self.frame.xpbar:SetValue(self.cXP)
+
+	-- Set the colour of the bar text
+	local txtcol = db.colours.xptext
+	self.frame.bartext:SetTextColor(txtcol.r, txtcol.g, txtcol.b, txtcol.a)
 
 	-- Hide the text or not?
 	if not db.general.hidetext then
