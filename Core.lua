@@ -612,7 +612,8 @@ function XPBarNone:OnInitialize()
 	ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
 	ACDialog:AddToBlizOptions("XPBarNone-RepMenu", L["Reputation Menu"], myName)
 	-- Register a chat command to open options
-	self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame) end)
+	--self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame) end)
+	self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(myName) end)
 	-- Profiles
 	local popts = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 	ACRegistry:RegisterOptionsTable("XPBarNone-Profiles", popts)
@@ -860,7 +861,8 @@ function XPBarNone:CreateXPBar()
 		end
 		-- Display options on Shift-RightClick
 		if IsShiftKeyDown() and arg1 == "RightButton" then
-			InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame)
+			--InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame)
+			InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata("XPBarNone", "Title"))
 		end
 		-- Display Reputation menu on Ctrl-RightClick
 		if IsControlKeyDown() and arg1 == "RightButton" then
