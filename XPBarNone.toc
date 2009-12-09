@@ -1,4 +1,4 @@
-## Interface: 30200
+## Interface: 30300
 ## Title: XPBarNone
 ## Author: phyber
 ## Notes: Lightweight XP bar using Ace3.
