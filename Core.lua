@@ -1185,7 +1185,7 @@ function XPBarNone:DrawRepMenu()
 
 	-- Reputations
 	for faction = 1, GetNumFactions() do
-		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,_,isWatched,isChild = GetFactionInfo(faction)
+		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild = GetFactionInfo(faction)
 		if not isHeader then
 			-- Faction
 			local repColour
@@ -1212,6 +1212,12 @@ function XPBarNone:DrawRepMenu()
 			else
 				tipText = string_format(L["Click to collapse %s faction listing"], name)
 				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:24:24:1:-1|t"
+			end
+
+			-- If the header also has rep, we prepend that onto the tipText.
+			if hasRep then
+				local standingText = _G["FACTION_STANDING_LABEL"..standing]
+				tipText = string_format("%s|n%s", GetRepTooltipText(standingText, bottom, top, earned), tipText)
 			end
 
 			--linenum = tooltip:AddLine(iconPath, name)
