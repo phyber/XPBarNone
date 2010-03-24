@@ -530,6 +530,10 @@ function XPBarNone:SetTexture(texture)
 	self.frame.remaining:SetStatusBarTexture(texturePath)
 	self.frame.xpbar:SetStatusBarTexture(texturePath)
 	self.frame.background:SetStatusBarColor(db.colours.background.r, db.colours.background.g, db.colours.background.b, db.colours.background.a)
+	-- LAME THANKS BLIZZ
+	self.frame.background:GetStatusBarTexture():SetHorizTile(false)
+	self.frame.remaining:GetStatusBarTexture():SetHorizTile(false)
+	self.frame.xpbar:GetStatusBarTexture():SetHorizTile(false)
 end
 
 -- Set bar widths
