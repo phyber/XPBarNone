@@ -530,7 +530,7 @@ function XPBarNone:SetTexture(texture)
 	self.frame.remaining:SetStatusBarTexture(texturePath)
 	self.frame.xpbar:SetStatusBarTexture(texturePath)
 	self.frame.background:SetStatusBarColor(db.colours.background.r, db.colours.background.g, db.colours.background.b, db.colours.background.a)
-	-- LAME THANKS BLIZZ
+	-- XXX: Blizz tiling breakage
 	self.frame.background:GetStatusBarTexture():SetHorizTile(false)
 	self.frame.remaining:GetStatusBarTexture():SetHorizTile(false)
 	self.frame.xpbar:GetStatusBarTexture():SetHorizTile(false)
@@ -937,6 +937,8 @@ function XPBarNone:CreateXPBar()
 	self.frame.bubbles:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
 	self.frame.bubbles:SetWidth(self.frame:GetWidth() - 4)
 	self.frame.bubbles:SetHeight(self.frame:GetHeight() - 8)
+	-- XXX: Blizz tiling breakage.
+	self.frame.bubbles:GetStatusBarTexture():SetHorizTile(false)
 
 	-- XP Bar Text
 	self.frame.bartext = self.frame.button:CreateFontString("XPBarNoneText", "OVERLAY")
