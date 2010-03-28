@@ -543,6 +543,7 @@ function XPBarNone:SetWidth(width)
 	self.frame.remaining:SetWidth(width - 4)
 	self.frame.xpbar:SetWidth(width - 4)
 	self.frame.bubbles:SetWidth(width - 4)
+	self:UpdateXPBar()
 end
 
 function XPBarNone:SetHeight(height)
