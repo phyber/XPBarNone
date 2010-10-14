@@ -539,6 +539,7 @@ end
 -- Set bar widths
 function XPBarNone:SetWidth(width)
 	self.frame:SetWidth(width)
+	self.frame.button:SetWidth(width - 4)
 	self.frame.background:SetWidth(width - 4)
 	self.frame.remaining:SetWidth(width - 4)
 	self.frame.xpbar:SetWidth(width - 4)
@@ -872,21 +873,20 @@ function XPBarNone:CreateXPBar()
 	self.frame.button:SetAllPoints(self.frame)
 	self.frame.button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	self.frame.button:RegisterForDrag("LeftButton")
-	self.frame.button:SetScript("OnClick", function()
+	self.frame.button:SetScript("OnClick", function(clickself, button, down)
 		-- Paste currently displayed text to edit box on Shift-LeftClick
-		if IsShiftKeyDown() and arg1 == "LeftButton" then
+		if IsShiftKeyDown() and button == "LeftButton" then
 			if not ChatFrameEditBox:IsVisible() then
 				ChatFrameEditBox:Show()
 			end
 			ChatFrameEditBox:Insert(self.frame.bartext:GetText())
 		end
 		-- Display options on Shift-RightClick
-		if IsShiftKeyDown() and arg1 == "RightButton" then
-			--InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame)
+		if IsShiftKeyDown() and button == "RightButton" then
 			InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata("XPBarNone", "Title"))
 		end
 		-- Display Reputation menu on Ctrl-RightClick
-		if IsControlKeyDown() and arg1 == "RightButton" then
+		if IsControlKeyDown() and button == "RightButton" then
 			self:MakeRepTooltip()
 		end
 	end)

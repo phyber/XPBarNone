@@ -1,7 +1,7 @@
-## Interface: 30300
+## Interface: 40000
 ## Title: XPBarNone
 ## Author: phyber
-## Notes: Lightweight XP bar using Ace3.
+## Notes: XP bar using Ace3.
 ## Version: @project-version@
 ## SavedVariables: XPBarNoneDB
 ## OptionalDeps: Ace3, LibQTip-1.0, LibSharedMedia-3.0
