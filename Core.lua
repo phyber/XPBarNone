@@ -876,10 +876,13 @@ function XPBarNone:CreateXPBar()
 	self.frame.button:SetScript("OnClick", function(clickself, button, down)
 		-- Paste currently displayed text to edit box on Shift-LeftClick
 		if IsShiftKeyDown() and button == "LeftButton" then
-			if not ChatFrameEditBox:IsVisible() then
-				ChatFrameEditBox:Show()
+			local activeWin = ChatEdit_GetActiveWindow()
+			if not activeWin then
+				activeWin = ChatEdit_GetLastActiveWindow()
+				activeWin:Show()
 			end
-			ChatFrameEditBox:Insert(self.frame.bartext:GetText())
+			activeWin:SetFocus()
+			activeWin:Insert(self.frame.bartext:GetText())
 		end
 		-- Display options on Shift-RightClick
 		if IsShiftKeyDown() and button == "RightButton" then
