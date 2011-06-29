@@ -29,6 +29,7 @@ local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
 local UnitLevel = UnitLevel
 local IsResting = IsResting
+local GetGuildInfo = GetGuildInfo
 local IsShiftKeyDown = IsShiftKeyDown
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
@@ -107,6 +108,7 @@ local defaults = {
 			repstring = "Rep: [faction] ([standing]) [curRep]/[maxRep] :: [repPC]",
 			autowatchrep = true,
 			showrepbar = false,
+			autotrackguild = false,
 		},
 		-- Colours of the various bars
 		-- We don't currently support alpha, but set it here so that we don't get
@@ -387,6 +389,12 @@ local function GetOptions(uiTypes, uiName, appName)
 						db.rep.autowatchrep = not db.rep.autowatchrep
 						XPBarNone:ToggleAutoWatch()
 					end,
+				},
+				autotrackguild = {
+					name = "Auto Track Guild Reputation",
+					desc = "Automatically track your guild reputation increases.",
+					type = "toggle",
+					order = 250,
 				},
 				showrepbar = {
 					name = L["Show Reputation"],
@@ -764,6 +772,11 @@ end
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
+	-- Fix for auto tracking guild reputation
+	local rankname, ranknum
+	if faction == GUILD_REPUTATION and db.rep.autotrackguild then
+		faction, rankname, ranknum = GetGuildInfo("player")
+	end
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
 		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
