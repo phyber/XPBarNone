@@ -54,7 +54,7 @@ local tooltip
 -- 1: The Burning Cruade. Level 70
 -- 2: Wrath of the Lich King. Level 80
 -- 3: Cataclysm. Level 85 (probably)
-local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetAccountExpansionLevel()]
+local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
 
 -- Register our textures
 LSM3:Register("statusbar", "BantoBar", "Interface\\AddOns\\XPBarNone\\Textures\\bantobar")
