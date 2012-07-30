@@ -941,6 +941,9 @@ function XPBarNone:CreateXPBar()
 	self.frame.xpbar:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
 	self.frame.xpbar:SetWidth(self.frame:GetWidth() - 4)
 	self.frame.xpbar:SetHeight(self.frame:GetHeight() - 8)
+	if IsAddOnLoaded("ElvUI") or IsAddOnLoaded("TukUI") then
+		self.frame.xpbar:CreateBackdrop()
+	end
 
 	-- Remaining Rested XP Bar
 	self.frame.remaining = CreateFrame("StatusBar", "XPBarNoneRemaining", self.frame)
