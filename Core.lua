@@ -14,16 +14,17 @@ local ipairs = ipairs
 local select = select
 -- Strings
 local string_format = string.format
-local string_match = string.match
-local string_len = string.len
 local string_gmatch = string.gmatch
-local string_reverse = string.reverse
 local string_gsub = string.gsub
+local string_len = string.len
+local string_match = string.match
+local string_reverse = string.reverse
 -- Maths
 local math_ceil = math.ceil
 local math_floor = math.floor
+local math_huge = math.huge
 local math_min = math.min
-local math_mod = mod
+local math_mod = math.fmod
 -- WoW Functions
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
@@ -734,6 +735,12 @@ local function GetNumKTL()
 		xp = xp + v
 	end
 	local avgxp = xp / #lastXPValues
+	local ktl = remainingXP / avgxp
+
+	-- We can divide by zero if we're on a new character. Protect against breakage here.
+	if ktl == math_huge then
+		return 0
+	end
 	return math_ceil(remainingXP / avgxp)
 end
 
