@@ -1232,7 +1232,7 @@ end
 -- Reputation menu
 function XPBarNone:DrawRepMenu()
 	local linenum = nil
-	local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:24:24:1:-1|t"
+	local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:16:16:1:-1|t"
 	local NormalFont = tooltip:GetFont()
 	--local HeaderFont = tooltip:GetHeaderFont()
 
