@@ -813,16 +813,12 @@ end
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
-local function GetRepText(repName, repStanding, repMin, repMax, repValue)
+local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel)
 	local text = db.rep.repstring
 
 	local standingText
-	local friendID, friendRep, friendMaxRep, _, _, friendTextLevel, friendThresh = GetFriendshipReputationByID(GetFactionIDByName(repName))
 	if friendID then
 		standingText = friendTextLevel
-		repMin = 0
-		repMax = math_min(friendMaxRep - friendThresh, 8400)
-		repValue = friendRep - friendThresh
 	else
 		standingText = _G["FACTION_STANDING_LABEL"..repStanding]
 	end
@@ -1071,9 +1067,17 @@ function XPBarNone:UpdateRepData()
 		return
 	end
 
-	repMax = repMax - repMin
-	repValue = repValue - repMin
-	repMin = 0
+	local friendID, friendRep, friendMaxRep, _, _, friendTextLevel, friendThresh = GetFriendshipReputationByID(GetFactionIDByName(repName))
+
+	if friendID then
+		repMax = math_min(friendMaxRep - friendThresh, 8400)
+		repValue = friendRep - friendThresh
+		repMin = 0
+	else
+		repMax = repMax - repMin
+		repValue = repValue - repMin
+		repMin = 0
+	end
 
 	if not self.frame.xpbar:IsVisible() then
 		self.frame.xpbar:Show()
@@ -1093,7 +1097,7 @@ function XPBarNone:UpdateRepData()
 	self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
 
 	if not db.general.hidetext then
-		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue))
+		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel))
 	else
 		self.frame.bartext:SetText("")
 	end
@@ -1243,7 +1247,7 @@ function XPBarNone:DrawRepMenu()
 	for faction = 1, GetNumFactions() do
 		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID = GetFactionInfo(faction)
 		if not isHeader then
-			local friendID, friendRep, friendMaxRep, friendText, friendTexture, friendTextLevel, friendThresh = GetFriendshipReputationByID(repID)
+			local friendID, friendRep, friendMaxRep, _, _, friendTextLevel, friendThresh = GetFriendshipReputationByID(repID)
 			-- Faction
 			local repColour
 			if standing == 8 then
