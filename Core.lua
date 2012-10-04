@@ -813,12 +813,16 @@ end
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
-local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel)
+local function GetRepText(repName, repStanding, repMin, repMax, repValue)
 	local text = db.rep.repstring
 
 	local standingText
+	local friendID, friendRep, friendMaxRep, _, _, friendTextLevel, friendThresh = GetFriendshipReputationByID(GetFactionIDByName(repName))
 	if friendID then
 		standingText = friendTextLevel
+		repMin = 0
+		repMax = math_min(friendMaxRep - friendThresh, 8400)
+		repValue = friendRep - friendThresh
 	else
 		standingText = _G["FACTION_STANDING_LABEL"..repStanding]
 	end
@@ -1089,8 +1093,7 @@ function XPBarNone:UpdateRepData()
 	self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
 
 	if not db.general.hidetext then
-		local friendID, _, _, _, _, friendTextLevel, _ = GetFriendshipReputationByID(GetFactionIDByName(repName))
-		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel))
+		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue))
 	else
 		self.frame.bartext:SetText("")
 	end
@@ -1251,6 +1254,9 @@ function XPBarNone:DrawRepMenu()
 			local standingText
 			if friendID then
 				standingText = friendTextLevel
+				bottom = 0
+				top = math_min(friendMaxRep - friendThresh, 8400)
+				earned = friendRep - friendThresh
 			else
 				standingText = _G["FACTION_STANDING_LABEL"..standing]
 			end
@@ -1267,10 +1273,10 @@ function XPBarNone:DrawRepMenu()
 			local tipText, iconPath
 			if isCollapsed then
 				tipText = string_format(L["Click to expand %s faction listing"], name)
-				iconPath = "|TInterface\\Buttons\\UI-PlusButton-Up:24:24:1:-1|t"
+				iconPath = "|TInterface\\Buttons\\UI-PlusButton-Up:16:16:1:-1|t"
 			else
 				tipText = string_format(L["Click to collapse %s faction listing"], name)
-				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:24:24:1:-1|t"
+				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:16:16:1:-1|t"
 			end
 
 			-- If the header also has rep, we prepend that onto the tipText.
