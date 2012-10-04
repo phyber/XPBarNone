@@ -799,14 +799,33 @@ local function SetWatchedFactionName(faction)
 		end
 	end
 end
+
+-- Gets the ID of the named faction.
+local function GetFactionIDByName(factionName)
+	for i = 1, GetNumFactions() do
+		local name,_,_,_,_,_,_,_,_,_,_,_,_,repID = GetFactionInfo(i)
+		if name == factionName then
+			return repID
+		end
+	end
+	return nil
+end
+
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
-local function GetRepText(repName, repStanding, repMin, repMax, repValue)
+local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel)
 	local text = db.rep.repstring
+
+	local standingText
+	if friendID then
+		standingText = friendTextLevel
+	else
+		standingText = _G["FACTION_STANDING_LABEL"..repStanding]
+	end
 
 	-- Now replace all the tokens
 	text = string_gsub(text, "%[faction%]", repName)
-	text = string_gsub(text, "%[standing%]", _G["FACTION_STANDING_LABEL"..repStanding])
+	text = string_gsub(text, "%[standing%]", standingText)
 	text = string_gsub(text, "%[curRep%]", commify(repValue))
 	text = string_gsub(text, "%[maxRep%]", commify(repMax))
 	text = string_gsub(text, "%[repPC%]", string_format("%.1f%%%%", repValue / repMax * 100))
@@ -1070,7 +1089,8 @@ function XPBarNone:UpdateRepData()
 	self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
 
 	if not db.general.hidetext then
-		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue))
+		local friendID, _, _, _, _, friendTextLevel, _ = GetFriendshipReputationByID(GetFactionIDByName(repName))
+		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel))
 	else
 		self.frame.bartext:SetText("")
 	end
@@ -1218,8 +1238,9 @@ function XPBarNone:DrawRepMenu()
 
 	-- Reputations
 	for faction = 1, GetNumFactions() do
-		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild = GetFactionInfo(faction)
+		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID = GetFactionInfo(faction)
 		if not isHeader then
+			local friendID, friendRep, friendMaxRep, friendText, friendTexture, friendTextLevel, friendThresh = GetFriendshipReputationByID(repID)
 			-- Faction
 			local repColour
 			if standing == 8 then
@@ -1227,7 +1248,12 @@ function XPBarNone:DrawRepMenu()
 			else
 				repColour = FACTION_BAR_COLORS[standing]
 			end
-			local standingText = _G["FACTION_STANDING_LABEL"..standing]
+			local standingText
+			if friendID then
+				standingText = friendTextLevel
+			else
+				standingText = _G["FACTION_STANDING_LABEL"..standing]
+			end
 			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
 
 			linenum = tooltip:AddLine(nil)
