@@ -672,6 +672,9 @@ function XPBarNone:OnEnable()
 	if db.rep.autowatchrep then
 		self:RegisterEvent("COMBAT_TEXT_UPDATE")
 	end
+	-- Used for hiding XP Bar during pet battles
+	self:RegisterEvent("PET_BATTLE_OPENING_START")
+	self:RegisterEvent("PET_BATTLE_CLOSE")
 	-- Register some LSM3 callbacks
 	--LSM3.RegisterCallback(self, "LibSharedMedia_Registered", "MediaUpdate")
 	LSM3.RegisterCallback(self, "LibSharedMedia_SetGlobal", function(callback, mtype, override)
@@ -1031,6 +1034,14 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
 		-- Everything ok? Watch the faction!
 		SetWatchedFactionName(faction)
 	end
+end
+
+function XPBarNone:PET_BATTLE_OPENING_START()
+	self.frame:Hide()
+end
+
+function XPBarNone:PET_BATTLE_CLOSE()
+	self.frame:Show()
 end
 
 function XPBarNone:UpdateXPData()
