@@ -1294,9 +1294,11 @@ function XPBarNone:DrawRepMenu()
 				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:16:16:1:-1|t"
 			end
 
-			-- If the header also has rep, we prepend that onto the tipText.
+			-- If the header also has rep, we prepend that onto the tipText
+			-- and append it on the header name.
 			if hasRep then
 				local standingText = _G["FACTION_STANDING_LABEL"..standing]
+				name = string_format("%s (%s)", name, standingText)
 				tipText = string_format("%s|n%s", GetRepTooltipText(standingText, bottom, top, earned), tipText)
 			end
 
