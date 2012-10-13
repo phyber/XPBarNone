@@ -848,13 +848,15 @@ local function GetRepTooltipText(standingText, bottom, top, earned)
 end
 
 -- Toggle the collapsed sections in the rep menu
-function XPBarNone:ToggleCollapse(faction)
+function XPBarNone:ToggleCollapse(args)
+	local faction, tooltip = args[1], args[2]
 	local isCollapsed = select(10, GetFactionInfo(faction))
 	if isCollapsed then
 		ExpandFactionHeader(faction)
 	else
 		CollapseFactionHeader(faction)
 	end
+	tooltip:UpdateScrolling()
 end
 
 function XPBarNone:SetWatchedFactionIndex(faction)
@@ -1306,7 +1308,7 @@ function XPBarNone:DrawRepMenu()
 			linenum = tooltip:AddLine(nil)
 			tooltip:SetCell(linenum, 1, iconPath, NormalFont)
 			tooltip:SetCell(linenum, 2, name, NormalFont)
-			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, faction)
+			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, {faction,tooltip})
 			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
 			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
 		end
