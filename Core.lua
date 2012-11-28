@@ -40,6 +40,10 @@ local ExpandFactionHeader = ExpandFactionHeader
 local CollapseFactionHeader = CollapseFactionHeader
 local GetWatchedFactionInfo = GetWatchedFactionInfo
 local SetWatchedFactionIndex = SetWatchedFactionIndex
+local GetFriendshipReputation = GetFriendshipReputation
+-- WoW constants
+local FACTION_BAR_COLORS = FACTION_BAR_COLORS
+local GUILD_REPUTATION = GUILD_REPUTATION
 -- Vars for averaging the kills to level
 local lastXPValues = {}
 local sessionkills = 0
@@ -54,7 +58,8 @@ local tooltip
 -- 0: WoW Classic. Level 60
 -- 1: The Burning Cruade. Level 70
 -- 2: Wrath of the Lich King. Level 80
--- 3: Cataclysm. Level 85 (probably)
+-- 3: Cataclysm. Level 85
+-- 4: Mists of Pandaria. Level 90
 local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
 
 -- Register our textures
@@ -804,6 +809,7 @@ local function SetWatchedFactionName(faction)
 end
 
 -- Gets the ID of the named faction.
+--[[
 local function GetFactionIDByName(factionName)
 	for i = 1, GetNumFactions() do
 		local name,_,_,_,_,_,_,_,_,_,_,_,_,repID = GetFactionInfo(i)
@@ -813,6 +819,7 @@ local function GetFactionIDByName(factionName)
 	end
 	return nil
 end
+--]]
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
@@ -1066,7 +1073,7 @@ function XPBarNone:UpdateRepData()
 		return
 	end
 
-	local repName, repStanding, repMin, repMax, repValue = GetWatchedFactionInfo()
+	local repName, repStanding, repMin, repMax, repValue, factionID = GetWatchedFactionInfo()
 
 	-- Set the colour of the bar text.
 	local txtcol = db.colours.reptext
@@ -1080,7 +1087,7 @@ function XPBarNone:UpdateRepData()
 		return
 	end
 
-	local friendID, friendRep, friendMaxRep, _, _, friendTextLevel, friendThresh = GetFriendshipReputationByID(GetFactionIDByName(repName))
+	local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
 
 	if friendID then
 		repMax = math_min(friendMaxRep - friendThresh, 8400)
@@ -1260,7 +1267,7 @@ function XPBarNone:DrawRepMenu()
 	for faction = 1, GetNumFactions() do
 		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID = GetFactionInfo(faction)
 		if not isHeader then
-			local friendID, friendRep, friendMaxRep, _, _, friendTextLevel, friendThresh = GetFriendshipReputationByID(repID)
+			local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
 			-- Faction
 			local repColour
 			if standing == 8 then
