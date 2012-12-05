@@ -40,7 +40,9 @@ local GUILD_REPUTATION = GUILD_REPUTATION
 local lastXPValues = {}
 local sessionkills = 0
 -- Rep hex colours
-local RepHexColours = {}
+-- Hex colours are automatically generated and cached on access.
+local STANDING_EXALTED = 8
+local repHexColour
 -- Used to fix some weird bar switching issue :)
 local mouseovershift
 -- Rep menu tooltip
@@ -616,7 +618,8 @@ function XPBarNone:RefreshConfig(event, database, newProfileKey)
 	self:SetTexture(db.general.texture)
 	self:ToggleBubbles()
 	self:ToggleClamp()
-	self:GenHexColours()
+	-- Nil out the exalted colour in repHexColour so it can be regenerated
+	repHexColour[STANDING_EXALTED] = nil
 	self:RestorePosition()
 	self:UpdateXPBar()
 end
@@ -657,7 +660,6 @@ function XPBarNone:OnEnable()
 	if self.CreateXPBar then
 		self:CreateXPBar()
 	end
-	self:GenHexColours()
 	-- XP Events
 	self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
 	self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
@@ -860,24 +862,6 @@ end
 
 function XPBarNone:SetWatchedFactionIndex(faction)
 	SetWatchedFactionIndex(faction)
-end
-
--- Get hex colours
-local function GetRepHexColour(standing)
-	return ("|cff%s"):format(RepHexColours[standing])
-end
-
--- Setup Rep colours
-function XPBarNone:GenHexColours()
-	for i = 1, 8 do
-		local fbc
-		if i == 8 then
-			fbc = db.colours.exalted
-		else
-			fbc = FACTION_BAR_COLORS[i]
-		end
-		RepHexColours[i] = ("%2x%2x%2x"):format(fbc.r * 255, fbc.g * 255, fbc.b * 255)
-	end
 end
 
 -- OK, main functions.
@@ -1241,6 +1225,24 @@ function XPBarNone:MakeRepTooltip()
 	tooltip:Show()
 end
 
+-- repHex colours are automatically generated and cached when first looked up.
+do
+	repHexColour = setmetatable({}, {
+		-- Called when indexing fails (key doesn't exist in table)
+		__index = function(t, k)
+			local FBC
+			if k == STANDING_EXALTED then
+				FBC = db.colours.exalted
+			else
+				FBC = FACTION_BAR_COLORS[k]
+			end
+			local hex = ("%02x%02x%02x"):format(FBC.r, FBC.g, FBC.b)
+			t[k] = hex
+			return hex
+		end,
+	})
+end
+
 -- Reputation menu
 function XPBarNone:DrawRepMenu()
 	local linenum = nil
@@ -1280,7 +1282,7 @@ function XPBarNone:DrawRepMenu()
 
 			linenum = tooltip:AddLine(nil)
 			tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ", NormalFont)
-			tooltip:SetCell(linenum, 2, ("%s%s (%s)|r"):format(GetRepHexColour(standing), name, standingText), GameTooltipTextSmall)
+			tooltip:SetCell(linenum, 2, ("|cff%s%s (%s)|r"):format(repHexColour[standing], name, standingText), GameTooltipTextSmall)
 			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
 			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
 			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
