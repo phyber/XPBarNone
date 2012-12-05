@@ -12,19 +12,11 @@ local tostring = tostring
 local type = type
 local ipairs = ipairs
 local select = select
--- Strings
-local string_format = string.format
-local string_gmatch = string.gmatch
-local string_gsub = string.gsub
-local string_len = string.len
-local string_match = string.match
-local string_reverse = string.reverse
 -- Maths
 local math_ceil = math.ceil
 local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
-local math_mod = math.fmod
 -- WoW Functions
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
@@ -707,20 +699,20 @@ end
 -- commify(num) Inserts thousands separators into numbers.
 -- 1000000 -> 1,000,000. etc.
 local function commify(num)
-	if not db.general.commify or string_len(tostring(num)) <= 3 or type(num) ~= "number" then
+	if not db.general.commify or type(num) ~= "number" or tostring(num):len() <= 3 then
 		return num
 	end
 	local str = ""
 	local count = 0
-	for d in string_gmatch(string_reverse(tostring(num)), "%d") do
-		if count ~= 0 and math_mod(count, 3) == 0 then
+	for d in tostring(num):reverse():gmatch("%d") do
+		if count ~= 0 and count % 3 == 0 then
 			str = str .. "," .. d
 		else
 			str = str .. d
 		end
 		count = count + 1
 	end
-	return string_reverse(str)
+	return str:reverse()
 end
 
 -- Tooltips for the rep menu
@@ -756,31 +748,31 @@ end
 local function GetXPText(restedXP)
 	local text = db.xp.xpstring
 
-	text = string_gsub(text, "%[curXP%]", commify(XPBarNone.cXP))
-	text = string_gsub(text, "%[maxXP%]", commify(XPBarNone.nXP))
+	text = text:gsub("%[curXP%]", commify(XPBarNone.cXP))
+	text = text:gsub("%[maxXP%]", commify(XPBarNone.nXP))
 
 	if restedXP then
-		text = string_gsub(text, "%[restXP%]", commify(restedXP))
-		text = string_gsub(text, "%[restPC%]", string_format("%.1f%%%%", restedXP / XPBarNone.nXP * 100))
+		text = text:gsub("%[restXP%]", commify(restedXP))
+		text = text:gsub("%[restPC%]", ("%.1f%%%%"):format(restedXP / XPBarNone.nXP * 100))
 	else
-		text = string_gsub(text, "%[restXP%]", db.xp.showzerorest and "0" or "")
-		text = string_gsub(text, "%[restPC%]", db.xp.showzerorest and "0%%" or "")
+		text = text:gsub("%[restXP%]", db.xp.showzerorest and "0" or "")
+		text = text:gsub("%[restPC%]", db.xp.showzerorest and "0%%" or "")
 	end
 
-	text = string_gsub(text, "%[curPC%]", string_format("%.1f%%%%", XPBarNone.cXP / XPBarNone.nXP * 100))
-	text = string_gsub(text, "%[needPC%]", string_format("%.1f%%%%", 100 - (XPBarNone.cXP / XPBarNone.nXP * 100)))
-	text = string_gsub(text, "%[pLVL%]", UnitLevel("player"))
-	text = string_gsub(text, "%[nLVL%]", UnitLevel("player") + 1)
-	text = string_gsub(text, "%[mLVL%]", maxPlayerLevel)
-	text = string_gsub(text, "%[needXP%]", commify(XPBarNone.remXP))
+	text = text:gsub("%[curPC%]", ("%.1f%%%%"):format(XPBarNone.cXP / XPBarNone.nXP * 100))
+	text = text:gsub("%[needPC%]", ("%.1f%%%%"):format(100 - (XPBarNone.cXP / XPBarNone.nXP * 100)))
+	text = text:gsub("%[pLVL%]", UnitLevel("player"))
+	text = text:gsub("%[nLVL%]", UnitLevel("player") + 1)
+	text = text:gsub("%[mLVL%]", maxPlayerLevel)
+	text = text:gsub("%[needXP%]", commify(XPBarNone.remXP))
 
-	local ktl = tonumber(string_format("%d", GetNumKTL()))
+	local ktl = tonumber(("%d"):format(GetNumKTL()))
 	if ktl <= 0 or not ktl then
 		ktl = '?'
 	end
 
-	text = string_gsub(text, "%[KTL%]", commify(ktl))
-	text = string_gsub(text, "%[BTL%]", string_format("%d", math_ceil(20 - ((XPBarNone.cXP / XPBarNone.nXP * 100) / 5))))
+	text = text:gsub("%[KTL%]", commify(ktl))
+	text = text:gsub("%[BTL%]", ("%d"):format(math_ceil(20 - ((XPBarNone.cXP / XPBarNone.nXP * 100) / 5))))
 
 	return text
 end
@@ -834,13 +826,13 @@ local function GetRepText(repName, repStanding, repMin, repMax, repValue, friend
 	end
 
 	-- Now replace all the tokens
-	text = string_gsub(text, "%[faction%]", repName)
-	text = string_gsub(text, "%[standing%]", standingText)
-	text = string_gsub(text, "%[curRep%]", commify(repValue))
-	text = string_gsub(text, "%[maxRep%]", commify(repMax))
-	text = string_gsub(text, "%[repPC%]", string_format("%.1f%%%%", repValue / repMax * 100))
-	text = string_gsub(text, "%[needRep%]", commify(repMax - repValue))
-	text = string_gsub(text, "%[needPC%]", string_format("%.1f%%%%", math_floor(100 - (repValue / repMax * 100))))
+	text = text:gsub("%[faction%]", repName)
+	text = text:gsub("%[standing%]", standingText)
+	text = text:gsub("%[curRep%]", commify(repValue))
+	text = text:gsub("%[maxRep%]", commify(repMax))
+	text = text:gsub("%[repPC%]", ("%.1f%%%%"):format(repValue / repMax * 100))
+	text = text:gsub("%[needRep%]", commify(repMax - repValue))
+	text = text:gsub("%[needPC%]", ("%.1f%%%%"):format(math_floor(100 - (repValue / repMax * 100))))
 
 	return text
 end
@@ -851,7 +843,7 @@ local function GetRepTooltipText(standingText, bottom, top, earned)
 	local curRep = earned - bottom
 	local repPercent = curRep / maxRep * 100
 
-	return string_format(L["Standing: %s\nRep: %s/%s [%.1f%%]"], standingText, commify(curRep), commify(maxRep), repPercent)
+	return (L["Standing: %s\nRep: %s/%s [%.1f%%]"]):format(standingText, commify(curRep), commify(maxRep), repPercent)
 end
 
 -- Toggle the collapsed sections in the rep menu
@@ -872,7 +864,7 @@ end
 
 -- Get hex colours
 local function GetRepHexColour(standing)
-	return string_format("|cff%s", RepHexColours[standing])
+	return ("|cff%s"):format(RepHexColours[standing])
 end
 
 -- Setup Rep colours
@@ -884,7 +876,7 @@ function XPBarNone:GenHexColours()
 		else
 			fbc = FACTION_BAR_COLORS[i]
 		end
-		RepHexColours[i] = string_format("%2x%2x%2x", fbc.r * 255, fbc.g * 255, fbc.b * 255)
+		RepHexColours[i] = ("%2x%2x%2x"):format(fbc.r * 255, fbc.g * 255, fbc.b * 255)
 	end
 end
 
@@ -1036,7 +1028,7 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
 	end
 	if db.rep.autowatchrep then
 		-- We don't want to watch factions we're losing rep with
-		if string_match(amount, "^%-.*") then
+		if amount:match("^%-.*") then
 			return
 		end
 
@@ -1226,7 +1218,7 @@ local function GetTipAnchor(frame, tooltip)
 	if (x / uiScale) + (ttWidth / 2) > uiWidth then
 		fX = fX - ((x / uiScale) + (ttWidth / 2) - uiWidth)
 	end
-	--XPBarNone:Print(string_format("Anchoring: %s %s %s %s %s", vhalf..hhalf, frame:GetName(), (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, fY))
+	--XPBarNone:Print(("Anchoring: %s %s %s %s %s"):format(vhalf..hhalf, frame:GetName(), (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, fY))
 	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, 0
 end
 
@@ -1288,7 +1280,7 @@ function XPBarNone:DrawRepMenu()
 
 			linenum = tooltip:AddLine(nil)
 			tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ", NormalFont)
-			tooltip:SetCell(linenum, 2, string_format("%s%s (%s)|r", GetRepHexColour(standing), name, standingText), GameTooltipTextSmall)
+			tooltip:SetCell(linenum, 2, ("%s%s (%s)|r"):format(GetRepHexColour(standing), name, standingText), GameTooltipTextSmall)
 			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
 			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
 			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
@@ -1296,10 +1288,10 @@ function XPBarNone:DrawRepMenu()
 			-- Header
 			local tipText, iconPath
 			if isCollapsed then
-				tipText = string_format(L["Click to expand %s faction listing"], name)
+				tipText = (L["Click to expand %s faction listing"]):format(name)
 				iconPath = "|TInterface\\Buttons\\UI-PlusButton-Up:16:16:1:-1|t"
 			else
-				tipText = string_format(L["Click to collapse %s faction listing"], name)
+				tipText = (L["Click to collapse %s faction listing"]):format(name)
 				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:16:16:1:-1|t"
 			end
 
@@ -1307,8 +1299,8 @@ function XPBarNone:DrawRepMenu()
 			-- and append it on the header name.
 			if hasRep then
 				local standingText = _G["FACTION_STANDING_LABEL"..standing]
-				name = string_format("%s (%s)", name, standingText)
-				tipText = string_format("%s|n%s", GetRepTooltipText(standingText, bottom, top, earned), tipText)
+				name = ("%s (%s)"):format(name, standingText)
+				tipText = ("%s|n%s"):format(GetRepTooltipText(standingText, bottom, top, earned), tipText)
 			end
 
 			--linenum = tooltip:AddLine(iconPath, name)
