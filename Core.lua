@@ -418,6 +418,7 @@ local function GetOptions(uiTypes, uiName, appName)
 			end,
 			set = function(info, r, g, b, a)
 				db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a = r, g, b, a
+				repHexColour[STANDING_EXALTED] = nil
 				self:UpdateXPBar()
 			end,
 			args = {
@@ -643,7 +644,6 @@ function XPBarNone:OnInitialize()
 	ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
 	ACDialog:AddToBlizOptions("XPBarNone-RepMenu", L["Reputation Menu"], myName)
 	-- Register a chat command to open options
-	--self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(LibStub("AceConfigDialog-3.0").BlizOptions["XPBarNone-General"].frame) end)
 	self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(myName) end)
 	-- Profiles
 	local popts = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
@@ -802,18 +802,18 @@ local function SetWatchedFactionName(faction)
 	end
 end
 
--- Gets the ID of the named faction.
---[[
-local function GetFactionIDByName(factionName)
-	for i = 1, GetNumFactions() do
-		local name,_,_,_,_,_,_,_,_,_,_,_,_,repID = GetFactionInfo(i)
-		if name == factionName then
-			return repID
-		end
-	end
-	return nil
+-- Cache FACTION_STANDING_LABEL
+local factionStandingLabel
+do
+	local _G = _G
+	factionStandingLabel = setmetatable({}, {
+		__index = function(t, k)
+			local FSL = _G["FACTION_STANDING_LABEL"..k]
+			t[k] = FSL
+			return FSL
+		end,
+	})
 end
---]]
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
@@ -824,7 +824,7 @@ local function GetRepText(repName, repStanding, repMin, repMax, repValue, friend
 	if friendID then
 		standingText = friendTextLevel
 	else
-		standingText = _G["FACTION_STANDING_LABEL"..repStanding]
+		standingText = factionStandingLabel[repStanding]
 	end
 
 	-- Now replace all the tokens
@@ -1037,7 +1037,7 @@ function XPBarNone:UpdateXPData()
 	self.diffXP = self.cXP - prevXP
 
 	if self.diffXP > 0 then
-		lastXPValues[math_mod(sessionkills, 10) + 1] = self.diffXP
+		lastXPValues[(sessionkills % 10) + 1] = self.diffXP
 		sessionkills = sessionkills + 1
 	end
 
@@ -1212,17 +1212,13 @@ function XPBarNone:MakeRepTooltip()
 		tooltip = LQT:Acquire("XPBarNoneTT", 2, "CENTER", "LEFT")
 	end
 	tooltip:SetClampedToScreen(true)
-	tooltip:Clear()
-	tooltip:Hide()
 	tooltip:SetScale(db.repmenu.scale)
-	self:DrawRepMenu()
-	tooltip:SetAutoHideDelay(db.repmenu.autohidedelay, self.frame.button)
-	tooltip:EnableMouse()
 	-- Anchor to the cursor position along the bar.
 	tooltip:ClearAllPoints()
 	tooltip:SetPoint(GetTipAnchor(self.frame.button, tooltip))
-	tooltip:UpdateScrolling()
-	tooltip:Show()
+	tooltip:SetAutoHideDelay(db.repmenu.autohidedelay, self.frame.button)
+	tooltip:EnableMouse()
+	self:DrawRepMenu()
 end
 
 -- repHex colours are automatically generated and cached when first looked up.
@@ -1236,7 +1232,7 @@ do
 			else
 				FBC = FACTION_BAR_COLORS[k]
 			end
-			local hex = ("%02x%02x%02x"):format(FBC.r, FBC.g, FBC.b)
+			local hex = ("%02x%02x%02x"):format(FBC.r * 255, FBC.g * 255, FBC.b * 255)
 			t[k] = hex
 			return hex
 		end,
@@ -1248,14 +1244,10 @@ function XPBarNone:DrawRepMenu()
 	local linenum = nil
 	local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:16:16:1:-1|t"
 	local NormalFont = tooltip:GetFont()
-	--local HeaderFont = tooltip:GetHeaderFont()
+	local GameTooltipTextSmall = GameTooltipTextSmall
 
 	tooltip:Hide()
 	tooltip:Clear()
-
-	--Header
-	--linenum = tooltip:AddLine(nil)
-	--tooltip:SetCell(linenum, 1, L["Faction Listing"], HeaderFont, "CENTER", 2)
 
 	-- Reputations
 	for faction = 1, GetNumFactions() do
@@ -1263,12 +1255,6 @@ function XPBarNone:DrawRepMenu()
 		if not isHeader then
 			local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
 			-- Faction
-			local repColour
-			if standing == 8 then
-				repColour = db.colours.exalted
-			else
-				repColour = FACTION_BAR_COLORS[standing]
-			end
 			local standingText
 			if friendID then
 				standingText = friendTextLevel
@@ -1276,7 +1262,7 @@ function XPBarNone:DrawRepMenu()
 				top = math_min(friendMaxRep - friendThresh, 8400)
 				earned = friendRep - friendThresh
 			else
-				standingText = _G["FACTION_STANDING_LABEL"..standing]
+				standingText = factionStandingLabel[standing]
 			end
 			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
 
@@ -1300,7 +1286,7 @@ function XPBarNone:DrawRepMenu()
 			-- If the header also has rep, we prepend that onto the tipText
 			-- and append it on the header name.
 			if hasRep then
-				local standingText = _G["FACTION_STANDING_LABEL"..standing]
+				local standingText = factionStandingLabel[standing]
 				name = ("%s (%s)"):format(name, standingText)
 				tipText = ("%s|n%s"):format(GetRepTooltipText(standingText, bottom, top, earned), tipText)
 			end
@@ -1315,10 +1301,8 @@ function XPBarNone:DrawRepMenu()
 		end
 	end
 
+	tooltip:UpdateScrolling()
 	tooltip:Show()
-	-- Hint
-	--linenum = tooltip:AddLine(nil)
-	--tooltip:SetCell(linenum, 1, "|cff00ff00".. L["Hint: Click to set watched faction."] .."|r", NormalFont, "CENTER", 2)
 end
 
 -- Bar positioning.
