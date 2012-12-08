@@ -1012,7 +1012,7 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
 	end
 	if db.rep.autowatchrep then
 		-- We don't want to watch factions we're losing rep with
-		if amount:match("^%-.*") then
+		if tostring(amount):match("^%-.*") then
 			return
 		end
 
