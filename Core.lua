@@ -792,12 +792,10 @@ local function SetWatchedFactionName(faction)
 		if name == faction then
 			-- If it's not watched and it's not a header
 			-- watch it.
-			if not isWatched and not isHeader then
+			if not isWatched then
 				SetWatchedFactionIndex(i)
-				return
-			else
-				return
 			end
+			return
 		end
 	end
 end
