@@ -704,11 +704,14 @@ local function commify(num)
 	if not db.general.commify or type(num) ~= "number" or tostring(num):len() <= 3 then
 		return num
 	end
+	-- This should use the appropriate separator based on
+	-- the language set in the WoW client.
+	local LARGE_NUMBER_SEPERATOR = LARGE_NUMBER_SEPERATOR
 	local str = ""
 	local count = 0
 	for d in tostring(num):reverse():gmatch("%d") do
 		if count ~= 0 and count % 3 == 0 then
-			str = str .. "," .. d
+			str = str .. LARGE_NUMBER_SEPERATOR .. d
 		else
 			str = str .. d
 		end
