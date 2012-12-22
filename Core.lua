@@ -29,6 +29,7 @@ local GetFactionInfo = GetFactionInfo
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
 local ExpandFactionHeader = ExpandFactionHeader
+local GetMouseButtonClicked = GetMouseButtonClicked
 local CollapseFactionHeader = CollapseFactionHeader
 local GetWatchedFactionInfo = GetWatchedFactionInfo
 local SetWatchedFactionIndex = SetWatchedFactionIndex
@@ -851,12 +852,15 @@ end
 
 -- Toggle the collapsed sections in the rep menu
 function XPBarNone:ToggleCollapse(args)
-	local faction, tooltip = args[1], args[2]
-	local isCollapsed = select(10, GetFactionInfo(faction))
-	if isCollapsed then
-		ExpandFactionHeader(faction)
+	local tooltip, factionIndex, name, hasRep, isCollapsed = args[1], args[2], args[3], args[4], args[5]
+	if hasRep and GetMouseButtonClicked() == "RightButton" then
+		SetWatchedFactionName(name)
 	else
-		CollapseFactionHeader(faction)
+		if isCollapsed then
+			ExpandFactionHeader(factionIndex)
+		else
+			CollapseFactionHeader(factionIndex)
+		end
 	end
 	tooltip:UpdateScrolling()
 end
@@ -1284,19 +1288,19 @@ function XPBarNone:DrawRepMenu()
 				iconPath = "|TInterface\\Buttons\\UI-MinusButton-Up:16:16:1:-1|t"
 			end
 
-			-- If the header also has rep, we prepend that onto the tipText
-			-- and append it on the header name.
-			if hasRep then
-				local standingText = factionStandingLabel[standing]
-				name = ("%s (%s)"):format(name, standingText)
-				tipText = ("%s|n%s"):format(GetRepTooltipText(standingText, bottom, top, earned), tipText)
-			end
-
 			--linenum = tooltip:AddLine(iconPath, name)
 			linenum = tooltip:AddLine(nil)
 			tooltip:SetCell(linenum, 1, iconPath, NormalFont)
-			tooltip:SetCell(linenum, 2, name, NormalFont)
-			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, {faction,tooltip})
+			-- If this header also has rep, then change the header slightly
+			-- and fix the tooltip.
+			if hasRep then
+				local standingText = factionStandingLabel[standing]
+				tooltip:SetCell(linenum, 2, ("%s (%s)"):format(name, standingText), NormalFont)
+				tipText = ("%s|n%s"):format(GetRepTooltipText(standingText, bottom, top, earned), tipText)
+			else
+				tooltip:SetCell(linenum, 2, name, NormalFont)
+			end
+			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, {tooltip,faction,name,hasRep,isCollapsed})
 			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
 			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
 		end
