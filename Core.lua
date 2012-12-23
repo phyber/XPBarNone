@@ -36,7 +36,7 @@ local SetWatchedFactionIndex = SetWatchedFactionIndex
 local GetFriendshipReputation = GetFriendshipReputation
 -- WoW constants
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
-local GUILD_REPUTATION = GUILD_REPUTATION
+local GUILD = GUILD
 -- Vars for averaging the kills to level
 local lastXPValues = {}
 local sessionkills = 0
@@ -785,10 +785,10 @@ end
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
-	-- Fix for auto tracking guild reputation
-	local rankname, ranknum
-	if faction == GUILD_REPUTATION and db.rep.autotrackguild then
-		faction, rankname, ranknum = GetGuildInfo("player")
+	-- Fix for auto tracking guild reputation since the COMBAT_TEXT_UPDATE doesn't contain
+	-- the guild name, it just contains "Guild"
+	if faction == GUILD and db.rep.autotrackguild then
+		faction = GetGuildInfo("player")
 	end
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
