@@ -1068,10 +1068,16 @@ function XPBarNone:UpdateRepData()
 		return
 	end
 
+	-- friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold
 	local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
-
 	if friendID then
-		repMax = math_min(friendMaxRep - friendThresh, 8400)
+		if nextFriendThresh then
+			-- Not yet "Exalted" with friend, use provided max for current level.
+			repMax = nextFriendThresh
+		else
+			-- "Exalted". Fake the maxRep.
+			repMax = 1000
+		end
 		repValue = friendRep - friendThresh
 		repMin = 0
 	else
@@ -1264,8 +1270,14 @@ function XPBarNone:DrawRepMenu()
 			if friendID then
 				standingText = friendTextLevel
 				bottom = 0
-				top = math_min(friendMaxRep - friendThresh, 8400)
 				earned = friendRep - friendThresh
+				if friendThreshNext then
+					-- Not "Exalted", use provided figure for next level.
+					top = friendThreshNext
+				else
+					-- "Exalted". Fake exalted max.
+					top = 1000
+				end
 			else
 				standingText = factionStandingLabel[standing]
 			end
