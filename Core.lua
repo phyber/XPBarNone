@@ -1076,8 +1076,9 @@ function XPBarNone:UpdateRepData()
 			repMax = nextFriendThresh
 		else
 			-- "Exalted". Fake the maxRep.
-			repMax = 1000
+			repMax = friendMaxRep + 1
 		end
+		repMax = repMax - friendThresh
 		repValue = friendRep - friendThresh
 		repMin = 0
 	else
@@ -1276,8 +1277,9 @@ function XPBarNone:DrawRepMenu()
 					top = friendThreshNext
 				else
 					-- "Exalted". Fake exalted max.
-					top = 1000
+					top = friendMaxRep + 1
 				end
+				top = top - friendThresh
 			else
 				standingText = factionStandingLabel[standing]
 			end
