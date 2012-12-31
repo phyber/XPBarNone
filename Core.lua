@@ -1315,7 +1315,11 @@ function XPBarNone:DrawRepMenu()
 			if hasRep then
 				local standingText = factionStandingLabel[standing]
 				tooltip:SetCell(linenum, 2, ("%s (%s)"):format(name, standingText), NormalFont)
-				tipText = ("%s|n%s"):format(GetRepTooltipText(standingText, bottom, top, earned), tipText)
+				tipText = ("%s|n%s|n%s"):format(
+					GetRepTooltipText(standingText, bottom, top, earned),
+					tipText,
+					L["Right click to watch faction"]
+				)
 			else
 				tooltip:SetCell(linenum, 2, name, NormalFont)
 			end

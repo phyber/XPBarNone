@@ -14,6 +14,7 @@ if not L then return end
 FOUND_STRINGS = []
 EXCLUDE_DIRS = [".git", "Libs", "Locales", "Textures"]
 LOCALE_REGEX = r"L\[\".+\"\]"
+FUNCTION_REGEX = r"^(?:local )?function (?P<function_name>.+)\(.*\)$"
 
 for root, dirnames, filenames in os.walk('.'):
 	for excluded in EXCLUDE_DIRS:
@@ -26,13 +27,22 @@ for root, dirnames, filenames in os.walk('.'):
 		sys.stderr.write("Searching {}\n".format(filepath))
 
 		with open(filepath, 'r') as f:
+			current_func = None
 			for line in f:
 				m = re.search(LOCALE_REGEX, line)
+				try:
+					func = re.search(FUNCTION_REGEX, line)
+					current_func = func.group('function_name')
+				except:
+					pass
 				if m:
 					if not headerAdded:
 						print(LOCALE_HEADER)
 						headerAdded = True
 						print("-- File: {}/{}".format(os.path.basename(os.getcwd()), filename))
+					if current_func:
+						print("-- In function: {}".format(current_func))
+						current_func = None
 					L = m.group(0)
 					if not L in FOUND_STRINGS:
 						FOUND_STRINGS.append(L)
