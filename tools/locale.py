@@ -13,13 +13,15 @@ if not L then return end
 
 FOUND_STRINGS = []
 EXCLUDE_DIRS = [".git", "Libs", "Locales", "Textures"]
-LOCALE_REGEX = r"L\[\".+\"\]"
-FUNCTION_REGEX = r"^(?:local )?function (?P<function_name>.+)\(.*\)$"
+LOCALE_REGEX = re.compile(r"(?P<locale_string>L\[\".+\"\])")
+FUNCTION_REGEX = re.compile(r"^(?:local )?function (?P<function_name>.+)\(.*\)$")
 
 for root, dirnames, filenames in os.walk('.'):
 	for excluded in EXCLUDE_DIRS:
-		if excluded in dirnames:
+		try:
 			dirnames.remove(excluded)
+		except:
+			pass
 
 	for filename in fnmatch.filter(filenames, '*.lua'):
 		headerAdded = False
@@ -29,10 +31,9 @@ for root, dirnames, filenames in os.walk('.'):
 		with open(filepath, 'r') as f:
 			current_func = None
 			for line in f:
-				m = re.search(LOCALE_REGEX, line)
+				m = LOCALE_REGEX.search(line)
 				try:
-					func = re.search(FUNCTION_REGEX, line)
-					current_func = func.group('function_name')
+					current_func = FUNCTION_REGEX.search(line).group('function_name')
 				except:
 					pass
 				if m:
@@ -41,9 +42,9 @@ for root, dirnames, filenames in os.walk('.'):
 						headerAdded = True
 						print("-- File: {}/{}".format(os.path.basename(os.getcwd()), filename))
 					if current_func:
-						print("-- In function: {}".format(current_func))
+						print("-- In function: {}()".format(current_func))
 						current_func = None
-					L = m.group(0)
+					L = m.group('locale_string')
 					if not L in FOUND_STRINGS:
 						FOUND_STRINGS.append(L)
 						print("{} = true".format(L))
