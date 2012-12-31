@@ -785,11 +785,6 @@ end
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
-	-- Fix for auto tracking guild reputation since the COMBAT_TEXT_UPDATE doesn't contain
-	-- the guild name, it just contains "Guild"
-	if faction == GUILD and db.rep.autotrackguild then
-		faction = GetGuildInfo("player")
-	end
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
 		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
@@ -1019,6 +1014,16 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
 		-- We don't want to watch factions we're losing rep with
 		if tostring(amount):match("^%-.*") then
 			return
+		end
+
+		-- Fix for auto tracking guild reputation since the COMBAT_TEXT_UPDATE doesn't contain
+		-- the guild name, it just contains "Guild"
+		if faction == GUILD then
+			if db.rep.autotrackguild then
+				faction = GetGuildInfo("player")
+			else
+				return
+			end
 		end
 
 		-- Everything ok? Watch the faction!
