@@ -36,6 +36,8 @@ local SetWatchedFactionIndex = SetWatchedFactionIndex
 local GetFriendshipReputation = GetFriendshipReputation
 -- WoW constants
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
+local FACTION_ALLIANCE = FACTION_ALLIANCE
+local FACTION_HORDE = FACTION_HORDE
 local GUILD = GUILD
 -- Vars for averaging the kills to level
 local lastXPValues = {}
@@ -785,6 +787,10 @@ end
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
+	-- Don't track Horde / Alliance classic faction header
+	if faction == FACTION_HORDE or faction == FACTION_ALLIANCE then
+		return
+	end
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
 		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
