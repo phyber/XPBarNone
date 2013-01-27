@@ -787,10 +787,6 @@ end
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
-	-- Don't track Horde / Alliance classic faction header
-	if faction == FACTION_HORDE or faction == FACTION_ALLIANCE then
-		return
-	end
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
 		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
@@ -1017,6 +1013,11 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
 		return
 	end
 	if db.rep.autowatchrep then
+		-- Don't track Horde / Alliance classic faction header
+		if faction == FACTION_HORDE or faction == FACTION_ALLIANCE then
+			return
+		end
+
 		-- We don't want to watch factions we're losing rep with
 		if tostring(amount):match("^%-.*") then
 			return
