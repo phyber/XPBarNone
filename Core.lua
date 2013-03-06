@@ -28,6 +28,7 @@ local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
+local GetFactionInfoByID = GetFactionInfoByID
 local ExpandFactionHeader = ExpandFactionHeader
 local GetMouseButtonClicked = GetMouseButtonClicked
 local CollapseFactionHeader = CollapseFactionHeader
@@ -789,7 +790,8 @@ end
 local function SetWatchedFactionName(faction)
 	for i = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
-		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_ = GetFactionInfo(i)
+		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
+		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_,_,_,_ = GetFactionInfo(i)
 		if name == faction then
 			-- If it's not watched and it's not a header
 			-- watch it.
@@ -816,14 +818,18 @@ end
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
-local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel)
+local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus)
 	local text = db.rep.repstring
 
 	local standingText
 	if friendID then
 		standingText = friendTextLevel
 	else
-		standingText = factionStandingLabel[repStanding]
+		if hasBonusRep then
+			standingText = ("%s+"):format(factionStandingLabel[repStanding])
+		else
+			standingText = factionStandingLabel[repStanding]
+		end
 	end
 
 	-- Now replace all the tokens
@@ -1081,6 +1087,7 @@ function XPBarNone:UpdateRepData()
 	end
 
 	-- friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold
+	local _, hasBonusRep, canBeLFGBonus
 	local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
 	if friendID then
 		if nextFriendThresh then
@@ -1094,6 +1101,8 @@ function XPBarNone:UpdateRepData()
 		repValue = friendRep - friendThresh
 		repMin = 0
 	else
+		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
+		_,_,_,_,_,_,_,_,_,_,_,_,_,_,hasBonusRep,canBeLFGBonus = GetFactionInfoByID(factionID)
 		repMax = repMax - repMin
 		repValue = repValue - repMin
 		repMin = 0
@@ -1117,7 +1126,7 @@ function XPBarNone:UpdateRepData()
 	self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
 
 	if not db.general.hidetext then
-		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel))
+		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus))
 	else
 		self.frame.bartext:SetText("")
 	end
@@ -1275,7 +1284,8 @@ function XPBarNone:DrawRepMenu()
 
 	-- Reputations
 	for faction = 1, GetNumFactions() do
-		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID = GetFactionInfo(faction)
+		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
+		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID,hasBonusRep,canBeLFGBonus = GetFactionInfo(faction)
 		if not isHeader then
 			local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
 			-- Faction
@@ -1293,7 +1303,11 @@ function XPBarNone:DrawRepMenu()
 				end
 				top = top - friendThresh
 			else
-				standingText = factionStandingLabel[standing]
+				if hasBonusRep then
+					standingText = ("%s+"):format(factionStandingLabel[standing])
+				else
+					standingText = factionStandingLabel[standing]
+				end
 			end
 			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
 
@@ -1320,7 +1334,12 @@ function XPBarNone:DrawRepMenu()
 			-- If this header also has rep, then change the header slightly
 			-- and fix the tooltip.
 			if hasRep then
-				local standingText = factionStandingLabel[standing]
+				local standingText
+				if hasBonusRep then
+					standingText = ("%s+"):format(factionStandingLabel[standing])
+				else
+					standingText = factionStandingLabel[standing]
+				end
 				tooltip:SetCell(linenum, 2, ("%s (%s)"):format(name, standingText), NormalFont)
 				tipText = ("%s|n%s|n%s"):format(
 					GetRepTooltipText(standingText, bottom, top, earned),

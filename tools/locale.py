@@ -24,11 +24,15 @@ for root, dirnames, filenames in os.walk('.'):
 			pass
 
 	for filename in fnmatch.filter(filenames, '*.lua'):
+		pathinfo = {
+			'dir': os.path.basename(os.getcwd()),
+			'filename': filename,
+			'fullpath': "{root}/{filename}".format(root=root, filename=filename),
+		}
 		headerAdded = False
-		filepath = "{}/{}".format(root, filename)
-		sys.stderr.write("Searching {}\n".format(filepath))
+		sys.stderr.write("Searching {fullpath}\n".format(**pathinfo))
 
-		with open(filepath, 'r') as f:
+		with open(pathinfo.get('fullpath'), 'r') as f:
 			current_func = None
 			for line in f:
 				m = LOCALE_REGEX.search(line)
@@ -40,7 +44,7 @@ for root, dirnames, filenames in os.walk('.'):
 					if not headerAdded:
 						print(LOCALE_HEADER)
 						headerAdded = True
-						print("-- File: {}/{}".format(os.path.basename(os.getcwd()), filename))
+						print("-- File: {dir}/{filename}".format(**pathinfo))
 					if current_func:
 						print("-- In function: {}()".format(current_func))
 						current_func = None
