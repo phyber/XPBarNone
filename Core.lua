@@ -791,7 +791,6 @@ end
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
 	for i = 1, GetNumFactions() do
-		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild = GetFactionInfo(factionIndex)
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
 		local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_,_,_,_ = GetFactionInfo(i)
 		if name == faction then
