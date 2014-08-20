@@ -303,6 +303,20 @@ local function GetOptions(uiTypes, uiName, appName)
 						self:UpdateXPBar()
 					end,
 				},
+				font = {
+					name = L["Font"],
+					desc = L["Set the font."],
+					type = "select",
+					order = 1450,
+					dialogControl = 'LSM30_Font',
+					values = AceGUIWidgetLSMlists.font,
+					style = "dropdown",
+					set = function(info, value)
+						db.general.font = value
+						self:SetFontOptions()
+						self:UpdateXPBar()
+					end,
+				},
 				hidetext = {
 					name = L["Hide Text"],
 					desc = L["Hide the text on the XP and Rep bars."],
@@ -522,7 +536,14 @@ end
 
 -- Set the font for the bar text
 function XPBarNone:SetFontOptions()
-	local font, size, flags = GameFontNormal:GetFont()
+	local font, size, flags
+	if db.general.font then
+		font = LSM3:Fetch("font", db.general.font)
+	end
+	-- Use regular font if we couldn't restore the saved one.
+	if not font then
+		font, size, flags = GameFontNormal:GetFont()
+	end
 	if db.general.fontoutline then
 		flags = "OUTLINE"
 	end
