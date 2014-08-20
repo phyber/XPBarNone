@@ -28,6 +28,7 @@ local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
+local IsXPUserDisabled = IsXPUserDisabled
 local GetFactionInfoByID = GetFactionInfoByID
 local ExpandFactionHeader = ExpandFactionHeader
 local GetMouseButtonClicked = GetMouseButtonClicked
@@ -774,6 +775,7 @@ local function GetXPText(restedXP)
 	text = text:gsub("%[nLVL%]", UnitLevel("player") + 1)
 	text = text:gsub("%[mLVL%]", maxPlayerLevel)
 	text = text:gsub("%[needXP%]", commify(XPBarNone.remXP))
+	text = text:gsub("%[isLocked%]", IsXPUserDisabled() and "*" or "")
 
 	local ktl = tonumber(("%d"):format(GetNumKTL()))
 	if ktl <= 0 or not ktl then
