@@ -1140,7 +1140,7 @@ function XPBarNone:UpdateRepData()
 
 	-- Use our own colour for exalted.
 	local repColour
-	if repStanding == 8 then
+	if repStanding == STANDING_EXALTED then
 		repColour = db.colours.exalted
 	else
 		repColour = FACTION_BAR_COLORS[repStanding]
