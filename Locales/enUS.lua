@@ -3,7 +3,7 @@ local L = LibStub("AceLocale-3.0"):NewLocale("XPBarNone", "enUS", true)
 if not L then return end
 --
 -- File: XPBarNone/Core.lua
--- In function: GetOptions
+-- In function: GetOptions()
 L["Lock"] = true
 L["Toggle the locking."] = true
 L["Screen Clamp"] = true
@@ -20,8 +20,6 @@ L["Width"] = true
 L["Set the bar width."] = true
 L["Height"] = true
 L["Set the bar height."] = true
-L["Font"] = true
-L["Set the font."] = true
 L["Font Size"] = true
 L["Change the size of the text."] = true
 L["Font Outline"] = true
@@ -34,6 +32,8 @@ L["Frame Strata"] = true
 L["Set the frame strata."] = true
 L["Texture"] = true
 L["Set the bar texture."] = true
+L["Font"] = true
+L["Set the font."] = true
 L["Hide Text"] = true
 L["Hide the text on the XP and Rep bars."] = true
 L["Show Zero"] = true
@@ -53,6 +53,8 @@ L["Reputation Bar related options"] = true
 L["Customise the Reputation text string."] = true
 L["Auto Watch Reputation"] = true
 L["Automatically watch the factions you gain rep with."] = true
+L["Auto Track Guild Reputation"] = true
+L["Automatically track your guild reputation increases."] = true
 L["Show Reputation"] = true
 L["Show the reputation bar instead of the XP bar."] = true
 L["Bar Colours"] = true
@@ -66,19 +68,22 @@ L["Set the colour of the resting bar."] = true
 L["Remaining"] = true
 L["Set the colour of the remaining bar."] = true
 L["Set the colour of the Exalted reputation bar."] = true
+L["Set the colour of the XP text."] = true
+L["Set the colour of the Reputation text."] = true
+L["Set the colour of the background bar."] = true
 L["Reputation Menu"] = true
 L["Configure the reputation menu."] = true
 L["Set the scale of the reputation menu."] = true
 L["Auto Hide Delay"] = true
 L["Set the length of time (in seconds) it takes for the menu to disappear once you move the mouse away."] = true
--- In function: XPBarNone:OnInitialize
+-- In function: XPBarNone:OnInitialize()
 L["XP Bar"] = true
 L["Profiles"] = true
--- In function: GetRepTooltipText
+-- In function: GetRepTooltipText()
 L["Standing: %s\nRep: %s/%s [%.1f%%]"] = true
--- In function: XPBarNone:UpdateRepData
+-- In function: XPBarNone:UpdateRepData()
 L["You need to select a faction to watch."] = true
--- In function: XPBarNone:DrawRepMenu
+-- In function: XPBarNone:DrawRepMenu()
 L["Click to expand %s faction listing"] = true
 L["Click to collapse %s faction listing"] = true
 L["Right click to watch faction"] = true

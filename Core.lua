@@ -40,6 +40,7 @@ local GetFriendshipReputation = GetFriendshipReputation
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
 local FACTION_ALLIANCE = FACTION_ALLIANCE
 local FACTION_HORDE = FACTION_HORDE
+local BACKGROUND = BACKGROUND
 local GUILD = GUILD
 -- Vars for averaging the kills to level
 local lastXPValues = {}
@@ -410,8 +411,8 @@ local function GetOptions(uiTypes, uiName, appName)
 					end,
 				},
 				autotrackguild = {
-					name = "Auto Track Guild Reputation",
-					desc = "Automatically track your guild reputation increases.",
+					name = L["Auto Track Guild Reputation"],
+					desc = L["Automatically track your guild reputation increases."],
 					type = "toggle",
 					order = 250,
 				},
@@ -432,12 +433,19 @@ local function GetOptions(uiTypes, uiName, appName)
 		local options = {
 			type = "group",
 			name = L["Bar Colours"],
-			get = function(info) 
+			get = function(info)
 				return db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a or 1
 			end,
 			set = function(info, r, g, b, a)
 				db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a = r, g, b, a
 				repHexColour[STANDING_EXALTED] = nil
+				local bgc = db.colours.background
+				self.frame.background:SetStatusBarColor(
+					bgc.r,
+					bgc.g,
+					bgc.b,
+					bgc.a
+				)
 				self:UpdateXPBar()
 			end,
 			args = {
@@ -451,49 +459,56 @@ local function GetOptions(uiTypes, uiName, appName)
 					desc = L["Set the colour of the normal bar."],
 					type = "color",
 					order = 100,
-					hasAlpha = false,
+					hasAlpha = true,
 				},
 				rested = {
 					name = L["Rested"],
 					desc = L["Set the colour of the rested bar."],
 					type = "color",
 					order = 200,
-					hasAlpha = false,
+					hasAlpha = true,
 				},
 				resting = {
 					name = L["Resting"],
 					desc = L["Set the colour of the resting bar."],
 					type = "color",
 					order = 300,
-					hasAlpha = false,
+					hasAlpha = true,
 				},
 				remaining = {
 					name = L["Remaining"],
 					desc = L["Set the colour of the remaining bar."],
 					type = "color",
 					order = 400,
-					hasAlpha = false,
+					hasAlpha = true,
 				},
 				exalted = {
 					name = _G.FACTION_STANDING_LABEL8,
 					desc = L["Set the colour of the Exalted reputation bar."],
 					type = "color",
 					order = 500,
-					hasAlpha = false,
+					hasAlpha = true,
 				},
 				xptext = {
 					name = "XP Text",
-					desc = "Set the colour of the XP text.",
+					desc = L["Set the colour of the XP text."],
 					type = "color",
 					order = 600,
-					hasAlpha = false,
+					hasAlpha = true,
 				},
 				reptext = {
 					name = "Rep Text",
-					desc = "Set the colour of the Reputation text.",
+					desc = L["Set the colour of the Reputation text."],
 					type = "color",
 					order = 700,
-					hasAlpha = false,
+					hasAlpha = true,
+				},
+				background = {
+					name = BACKGROUND,
+					desc = L["Set the colour of the background bar."],
+					type = "color",
+					order = 800,
+					hasAlpha = true,
 				},
 			},
 		}
@@ -1024,7 +1039,7 @@ function XPBarNone:CreateXPBar()
 	self:ToggleClamp()
 	self:ToggleBorder()
 	self:RestorePosition()
-	
+
 	-- Kill function after the bar is made.
 	XPBarNone.CreateXPBar = nil
 end
