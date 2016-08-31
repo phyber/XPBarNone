@@ -1346,14 +1346,20 @@ function XPBarNone:DrawRepMenu()
 					standingText = factionStandingLabel[standing]
 				end
 			end
-			local tipText = GetRepTooltipText(standingText, bottom, top, earned)
 
-			linenum = tooltip:AddLine(nil)
-			tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ", NormalFont)
-			tooltip:SetCell(linenum, 2, ("|cff%s%s (%s)|r"):format(repHexColour[standing], name, standingText), GameTooltipTextSmall)
-			tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
-			tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
-			tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
+			-- Legion introduced a bug where you can be shown a
+			-- completely blank rep, so only add menu entries for
+			-- things with a name.
+			if name then
+				local tipText = GetRepTooltipText(standingText, bottom, top, earned)
+
+				linenum = tooltip:AddLine(nil)
+				tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ", NormalFont)
+				tooltip:SetCell(linenum, 2, ("|cff%s%s (%s)|r"):format(repHexColour[standing], name, standingText), GameTooltipTextSmall)
+				tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
+				tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
+				tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
+			end
 		else
 			-- Header
 			local tipText, iconPath
