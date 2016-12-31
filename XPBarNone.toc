@@ -1,4 +1,4 @@
-## Interface: 70000
+## Interface: 70100
 ## Title: XPBarNone
 ## Author: phyber
 ## Notes: XP bar using Ace3.
