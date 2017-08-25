@@ -3,44 +3,44 @@ XPBarNone = LibStub("AceAddon-3.0"):NewAddon("XPBarNone", "AceEvent-3.0", "AceCo
 local self, XPBarNone = XPBarNone, XPBarNone
 -- Libs
 local L = LibStub("AceLocale-3.0"):GetLocale("XPBarNone")
-local LQT = LibStub:GetLibrary("LibQTip-1.0")
 local LSM3 = LibStub("LibSharedMedia-3.0")
+local LQT = LibStub:GetLibrary("LibQTip-1.0")
 -- Doodads
 local _G = _G
+local ipairs = ipairs
+local select = select
 local tonumber = tonumber
 local tostring = tostring
 local type = type
-local ipairs = ipairs
-local select = select
 -- Maths
 local math_ceil = math.ceil
 local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
 -- WoW Functions
-local UnitXP = UnitXP
-local UnitXPMax = UnitXPMax
-local UnitLevel = UnitLevel
-local IsResting = IsResting
+local CollapseFactionHeader = CollapseFactionHeader
+local ExpandFactionHeader = ExpandFactionHeader
 local GetGuildInfo = GetGuildInfo
-local IsShiftKeyDown = IsShiftKeyDown
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
+local GetFactionInfoByID = GetFactionInfoByID
+local GetFriendshipReputation = GetFriendshipReputation
+local GetMouseButtonClicked = GetMouseButtonClicked
+local GetWatchedFactionInfo = GetWatchedFactionInfo
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
+local IsResting = IsResting
+local IsShiftKeyDown = IsShiftKeyDown
 local IsXPUserDisabled = IsXPUserDisabled
-local GetFactionInfoByID = GetFactionInfoByID
-local ExpandFactionHeader = ExpandFactionHeader
-local GetMouseButtonClicked = GetMouseButtonClicked
-local CollapseFactionHeader = CollapseFactionHeader
-local GetWatchedFactionInfo = GetWatchedFactionInfo
 local SetWatchedFactionIndex = SetWatchedFactionIndex
-local GetFriendshipReputation = GetFriendshipReputation
+local UnitLevel = UnitLevel
+local UnitXP = UnitXP
+local UnitXPMax = UnitXPMax
 -- WoW constants
-local FACTION_BAR_COLORS = FACTION_BAR_COLORS
-local FACTION_ALLIANCE = FACTION_ALLIANCE
-local FACTION_HORDE = FACTION_HORDE
 local BACKGROUND = BACKGROUND
+local FACTION_ALLIANCE = FACTION_ALLIANCE
+local FACTION_BAR_COLORS = FACTION_BAR_COLORS
+local FACTION_HORDE = FACTION_HORDE
 local GUILD = GUILD
 -- Vars for averaging the kills to level
 local lastXPValues = {}
@@ -869,6 +869,12 @@ local function GetRepText(repName, repStanding, repMin, repMax, repValue, friend
 		end
 	end
 
+    -- Exalted has been changed. Let's make it appear as it used to.
+    if repStanding == STANDING_EXALTED then
+        repValue = 999
+        repMax = 1000
+    end
+
 	-- Now replace all the tokens
 	text = text:gsub("%[faction%]", repName)
 	text = text:gsub("%[standing%]", standingText)
@@ -1140,8 +1146,17 @@ function XPBarNone:UpdateRepData()
 	else
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
 		_,_,_,_,_,_,_,_,_,_,_,_,_,_,hasBonusRep,canBeLFGBonus = GetFactionInfoByID(factionID)
-		repMax = repMax - repMin
-		repValue = repValue - repMin
+
+        -- Fudge the values so the bar fills up after Blizzard changed exalted
+        -- in Legion.
+        if repStanding == STANDING_EXALTED then
+            repMax = 1000
+            repValue = 999
+        else
+            repMax = repMax - repMin
+            repValue = repValue - repMin
+        end
+
 		repMin = 0
 	end
 
