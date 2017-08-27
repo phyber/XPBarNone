@@ -1359,6 +1359,14 @@ function XPBarNone:DrawRepMenu()
         -- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
         local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID,hasBonusRep,canBeLFGBonus = GetFactionInfo(faction)
 
+        -- Set these to previous max values for exalted. Legion changed how
+        -- exalted works.
+        if standing == STANDING_EXALTED then
+            bottom = 0
+            top = 1000
+            earned = 999
+        end
+
         if not isHeader then
             local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
             local isFactionParagon = IsFactionParagon(repID)
@@ -1394,12 +1402,6 @@ function XPBarNone:DrawRepMenu()
                 bottom = 0
                 top = parThresh
                 earned = parValue % parThresh
-            else
-                if standing == STANDING_EXALTED then
-                    bottom = 0
-                    top = 1000
-                    earned = 999
-                end
             end
 
             -- Legion introduced a bug where you can be shown a
@@ -1438,11 +1440,12 @@ function XPBarNone:DrawRepMenu()
                 else
                     standingText = factionStandingLabel[standing]
                 end
+
                 tooltip:SetCell(linenum, 2, ("%s (%s)"):format(name, standingText), NormalFont)
                 tipText = ("%s|n%s|n%s"):format(
-                GetRepTooltipText(standingText, bottom, top, earned),
-                tipText,
-                L["Right click to watch faction"]
+                    GetRepTooltipText(standingText, bottom, top, earned),
+                    tipText,
+                    L["Right click to watch faction"]
                 )
             else
                 tooltip:SetCell(linenum, 2, name, NormalFont)
