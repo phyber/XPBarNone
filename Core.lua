@@ -1376,6 +1376,7 @@ function XPBarNone:DrawRepMenu()
                 else
                     -- "Exalted". Fake exalted max.
                     top = friendMaxRep + 1
+                    earned = 1
                 end
 
                 top = top - friendThresh
