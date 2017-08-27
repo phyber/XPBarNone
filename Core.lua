@@ -24,11 +24,13 @@ local GetGuildInfo = GetGuildInfo
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetFactionInfoByID = GetFactionInfoByID
+local GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
 local GetFriendshipReputation = GetFriendshipReputation
 local GetMouseButtonClicked = GetMouseButtonClicked
 local GetWatchedFactionInfo = GetWatchedFactionInfo
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
+local IsFactionParagon = C_Reputation.IsFactionParagon
 local IsResting = IsResting
 local IsShiftKeyDown = IsShiftKeyDown
 local IsXPUserDisabled = IsXPUserDisabled
@@ -855,25 +857,20 @@ end
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
-local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus)
+local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus, isFactionParagon)
 	local text = db.rep.repstring
 
 	local standingText
 	if friendID then
 		standingText = friendTextLevel
 	else
-		if hasBonusRep then
+        -- Add a + next to the standing for bonus or paragon reps.
+		if hasBonusRep or isFactionParagon then
 			standingText = ("%s+"):format(factionStandingLabel[repStanding])
 		else
 			standingText = factionStandingLabel[repStanding]
 		end
 	end
-
-    -- Exalted has been changed. Let's make it appear as it used to.
-    if repStanding == STANDING_EXALTED then
-        repValue = 999
-        repMax = 1000
-    end
 
 	-- Now replace all the tokens
 	text = text:gsub("%[faction%]", repName)
@@ -1116,6 +1113,7 @@ function XPBarNone:UpdateRepData()
 	end
 
 	local repName, repStanding, repMin, repMax, repValue, factionID = GetWatchedFactionInfo()
+    local isFactionParagon = IsFactionParagon(factionID)
 
 	-- Set the colour of the bar text.
 	local txtcol = db.colours.reptext
@@ -1145,13 +1143,22 @@ function XPBarNone:UpdateRepData()
 		repMin = 0
 	else
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
-		_,_,_,_,_,_,_,_,_,_,_,_,_,_,hasBonusRep,canBeLFGBonus = GetFactionInfoByID(factionID)
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,hasBonusRep,canBeLFGBonus = GetFactionInfoByID(factionID)
 
-        -- Fudge the values so the bar fills up after Blizzard changed exalted
-        -- in Legion.
+        -- If a faction is exalted in Legion, it might be a paragon rep.
+        -- Check for that, if it's not, fudge the numbers to make it appear
+        -- like the old full rep bar.
         if repStanding == STANDING_EXALTED then
-            repMax = 1000
-            repValue = 999
+            if isFactionParagon then
+                local parValue, parThresh, _, _ = GetFactionParagonInfo(factionID)
+                -- parValue is additive. We need to modulo to get the real
+                -- reputation value vs. the current threshold.
+                repMax = parThresh
+                repValue = parValue % parThresh
+            else
+                repMax = 1000
+                repValue = 999
+            end
         else
             repMax = repMax - repMin
             repValue = repValue - repMin
@@ -1178,7 +1185,20 @@ function XPBarNone:UpdateRepData()
 	self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
 
 	if not db.general.hidetext then
-		self.frame.bartext:SetText(GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus))
+        self.frame.bartext:SetText(
+            GetRepText(
+                repName,
+                repStanding,
+                repMin,
+                repMax,
+                repValue,
+                friendID,
+                friendTextLevel,
+                hasBonusRep,
+                canBeLFGBonus,
+                isFactionParagon
+            )
+        )
 	else
 		self.frame.bartext:SetText("")
 	end
