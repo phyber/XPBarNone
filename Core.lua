@@ -1358,14 +1358,18 @@ function XPBarNone:DrawRepMenu()
 	for faction = 1, GetNumFactions() do
 		-- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
 		local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID,hasBonusRep,canBeLFGBonus = GetFactionInfo(faction)
+
 		if not isHeader then
 			local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
+            local isFactionParagon = IsFactionParagon(repID)
+
 			-- Faction
 			local standingText
 			if friendID then
 				standingText = friendTextLevel
 				bottom = 0
 				earned = friendRep - friendThresh
+
 				if friendThreshNext then
 					-- Not "Exalted", use provided figure for next level.
 					top = friendThreshNext
@@ -1373,14 +1377,29 @@ function XPBarNone:DrawRepMenu()
 					-- "Exalted". Fake exalted max.
 					top = friendMaxRep + 1
 				end
+
 				top = top - friendThresh
 			else
-				if hasBonusRep then
+				if hasBonusRep or isFactionParagon then
 					standingText = ("%s+"):format(factionStandingLabel[standing])
 				else
 					standingText = factionStandingLabel[standing]
 				end
 			end
+
+            -- Paragon reputation values
+            if isFactionParagon then
+                local parValue, parThresh, _, _ = GetFactionParagonInfo(repID)
+                bottom = 0
+                top = parThresh
+                earned = parValue % parThresh
+            else
+                if standing == STANDING_EXALTED then
+                    bottom = 0
+                    top = 1000
+                    earned = 999
+                end
+            end
 
 			-- Legion introduced a bug where you can be shown a
 			-- completely blank rep, so only add menu entries for
