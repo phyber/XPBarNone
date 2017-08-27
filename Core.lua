@@ -62,6 +62,8 @@ local tooltip
 -- 2: Wrath of the Lich King. Level 80
 -- 3: Cataclysm. Level 85
 -- 4: Mists of Pandaria. Level 90
+-- 5: Warlords of Draenor. Level 100
+-- 6: Legion. Level 110
 local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
 
 -- Register our textures
