@@ -1125,12 +1125,13 @@ function XPBarNone:UpdateRepData()
         if nextFriendThresh then
             -- Not yet "Exalted" with friend, use provided max for current level.
             repMax = nextFriendThresh
+            repValue = friendRep - friendThresh
         else
             -- "Exalted". Fake the maxRep.
             repMax = friendMaxRep + 1
+            repValue = 1
         end
         repMax = repMax - friendThresh
-        repValue = friendRep - friendThresh
         repMin = 0
     else
         -- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
