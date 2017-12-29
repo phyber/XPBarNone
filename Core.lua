@@ -18,6 +18,7 @@ local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
 -- WoW Functions
+local BreakUpLargeNumbers = BreakUpLargeNumbers
 local CollapseFactionHeader = CollapseFactionHeader
 local ExpandFactionHeader = ExpandFactionHeader
 local GetGuildInfo = GetGuildInfo
@@ -749,20 +750,8 @@ local function commify(num)
     if not db.general.commify or type(num) ~= "number" or tostring(num):len() <= 3 then
         return num
     end
-    -- This should use the appropriate separator based on
-    -- the language set in the WoW client.
-    local LARGE_NUMBER_SEPERATOR = LARGE_NUMBER_SEPERATOR
-    local str = ""
-    local count = 0
-    for d in tostring(num):reverse():gmatch("%d") do
-        if count ~= 0 and count % 3 == 0 then
-            str = str .. LARGE_NUMBER_SEPERATOR .. d
-        else
-            str = str .. d
-        end
-        count = count + 1
-    end
-    return str:reverse()
+
+    return BreakUpLargeNumbers(num)
 end
 
 -- Tooltips for the rep menu
