@@ -1,10 +1,12 @@
 -- Addon
 XPBarNone = LibStub("AceAddon-3.0"):NewAddon("XPBarNone", "AceEvent-3.0", "AceConsole-3.0")
 local self, XPBarNone = XPBarNone, XPBarNone
+
 -- Libs
 local L = LibStub("AceLocale-3.0"):GetLocale("XPBarNone")
 local LSM3 = LibStub("LibSharedMedia-3.0")
 local LQT = LibStub:GetLibrary("LibQTip-1.0")
+
 -- Doodads
 local _G = _G
 local ipairs = ipairs
@@ -12,11 +14,13 @@ local select = select
 local tonumber = tonumber
 local tostring = tostring
 local type = type
+
 -- Maths
 local math_ceil = math.ceil
 local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
+
 -- WoW Functions
 local BreakUpLargeNumbers = BreakUpLargeNumbers
 local CollapseFactionHeader = CollapseFactionHeader
@@ -39,21 +43,26 @@ local SetWatchedFactionIndex = SetWatchedFactionIndex
 local UnitLevel = UnitLevel
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
+
 -- WoW constants
 local BACKGROUND = BACKGROUND
 local FACTION_ALLIANCE = FACTION_ALLIANCE
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
 local FACTION_HORDE = FACTION_HORDE
 local GUILD = GUILD
+
 -- Vars for averaging the kills to level
 local lastXPValues = {}
 local sessionkills = 0
+
 -- Rep hex colours
 -- Hex colours are automatically generated and cached on access.
 local STANDING_EXALTED = 8
 local repHexColour
+
 -- Used to fix some weird bar switching issue :)
 local mouseovershift
+
 -- Rep menu tooltip
 local tooltip
 
@@ -706,22 +715,26 @@ function XPBarNone:OnEnable()
     if self.CreateXPBar then
         self:CreateXPBar()
     end
+
     -- XP Events
     self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
     self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
     self:RegisterEvent("PLAYER_UPDATE_RESTING", "UpdateXPData")
     self:RegisterEvent("UPDATE_EXHAUSTION", "UpdateXPBar")
+
     -- Rep Events
     self:RegisterEvent("UPDATE_FACTION", "UpdateXPBar")
+
     -- Only register this one if we're auto watching rep.
     if db.rep.autowatchrep then
         self:RegisterEvent("COMBAT_TEXT_UPDATE")
     end
+
     -- Used for hiding XP Bar during pet battles
     self:RegisterEvent("PET_BATTLE_OPENING_START")
     self:RegisterEvent("PET_BATTLE_CLOSE")
+
     -- Register some LSM3 callbacks
-    --LSM3.RegisterCallback(self, "LibSharedMedia_Registered", "MediaUpdate")
     LSM3.RegisterCallback(self, "LibSharedMedia_SetGlobal", function(callback, mtype, override)
         if mtype == "statusbar" and override ~= nil then
             self:SetTexture(override)
@@ -770,9 +783,11 @@ end
 local function GetNumKTL()
     local remainingXP = XPBarNone.remXP
     local xp = 0
+
     for _, v in ipairs(lastXPValues) do
         xp = xp + v
     end
+
     local avgxp = xp / #lastXPValues
     local ktl = remainingXP / avgxp
 
@@ -780,6 +795,7 @@ local function GetNumKTL()
     if ktl == math_huge then
         return 0
     end
+
     return math_ceil(remainingXP / avgxp)
 end
 
@@ -820,20 +836,27 @@ end
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
     for i = 1, GetNumFactions() do
-        -- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
+        -- name, description, standingID, barMin, barMax, barValue, atWarWith,
+        -- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild,
+        -- factionID, hasBonusRepGain, canBeLFGBonus
+        -- = GetFactionInfo(factionIndex);
         local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_,_,_,_ = GetFactionInfo(i)
+
         if name == faction then
             -- If it's not watched and it's not a header
             -- watch it.
             if not isWatched then
                 SetWatchedFactionIndex(i)
             end
+
             return
         end
     end
 end
 
 -- Cache FACTION_STANDING_LABEL
+-- When a lookup is first attempted on this cable, we go and lookup the real
+-- value and cache it.
 local factionStandingLabel
 do
     local _G = _G
@@ -881,12 +904,18 @@ local function GetRepTooltipText(standingText, bottom, top, earned)
     local curRep = earned - bottom
     local repPercent = curRep / maxRep * 100
 
-    return (L["Standing: %s\nRep: %s/%s [%.1f%%]"]):format(standingText, commify(curRep), commify(maxRep), repPercent)
+    return (L["Standing: %s\nRep: %s/%s [%.1f%%]"]):format(
+        standingText,
+        commify(curRep),
+        commify(maxRep),
+        repPercent
+    )
 end
 
 -- Toggle the collapsed sections in the rep menu
 function XPBarNone:ToggleCollapse(args)
     local tooltip, factionIndex, name, hasRep, isCollapsed = args[1], args[2], args[3], args[4], args[5]
+
     if hasRep and GetMouseButtonClicked() == "RightButton" then
         SetWatchedFactionName(name)
     else
@@ -896,6 +925,7 @@ function XPBarNone:ToggleCollapse(args)
             CollapseFactionHeader(factionIndex)
         end
     end
+
     tooltip:UpdateScrolling()
 end
 
@@ -907,7 +937,9 @@ end
 -- XPBar creation
 function XPBarNone:CreateXPBar()
     -- Check if the bar already exists before proceeding.
-    if self.frame then return end
+    if self.frame then
+        return
+    end
 
     -- Main Frame
     self.frame = CreateFrame("Frame", "XPBarNoneFrame", UIParent)
@@ -950,24 +982,34 @@ function XPBarNone:CreateXPBar()
             activeWin:SetFocus()
             activeWin:Insert(self.frame.bartext:GetText())
         end
+
         -- Display options on Shift-RightClick
         if IsShiftKeyDown() and button == "RightButton" then
-            InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata("XPBarNone", "Title"))
+            InterfaceOptionsFrame_OpenToCategory(
+                GetAddOnMetadata("XPBarNone", "Title")
+            )
         end
+
         -- Display Reputation menu on Ctrl-RightClick
         if IsControlKeyDown() and button == "RightButton" then
             self:MakeRepTooltip()
         end
     end)
+
+    -- Movement starting
     self.frame.button:SetScript("OnDragStart", function()
         if not db.general.locked then
             self.frame:StartMoving()
         end
     end)
+
+    -- Movement stopped
     self.frame.button:SetScript("OnDragStop", function()
         self.frame:StopMovingOrSizing()
         self:SavePosition()
     end)
+
+    -- On mouse entering the frame.
     self.frame.button:SetScript("OnEnter", function()
         if db.general.mouseover and not IsShiftKeyDown() and not IsControlKeyDown() then
             self:ToggleShowReputation()
@@ -975,6 +1017,8 @@ function XPBarNone:CreateXPBar()
             mouseovershift = true
         end
     end)
+
+    -- On mouse leaving the frame
     self.frame.button:SetScript("OnLeave", function()
         if db.general.mouseover and not mouseovershift then
             self:ToggleShowReputation()
@@ -994,6 +1038,9 @@ function XPBarNone:CreateXPBar()
     self.frame.xpbar:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
     self.frame.xpbar:SetWidth(self.frame:GetWidth() - 4)
     self.frame.xpbar:SetHeight(self.frame:GetHeight() - 8)
+
+    -- Some Elv and Tuk UI compatibility. Never used them myself.
+    -- These were suggested by users.
     if IsAddOnLoaded("ElvUI") or IsAddOnLoaded("TukUI") then
         self.frame.xpbar:CreateBackdrop()
     end
@@ -1010,6 +1057,7 @@ function XPBarNone:CreateXPBar()
     self.frame.bubbles:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
     self.frame.bubbles:SetWidth(self.frame:GetWidth() - 4)
     self.frame.bubbles:SetHeight(self.frame:GetHeight() - 8)
+
     -- XXX: Blizz tiling breakage.
     self.frame.bubbles:GetStatusBarTexture():SetHorizTile(false)
 
@@ -1049,6 +1097,8 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
     if msgtype ~= "FACTION" then
         return
     end
+
+    -- If we're watching reputations automatically
     if db.rep.autowatchrep then
         -- Don't track Horde / Alliance classic faction header
         if faction == FACTION_HORDE or faction == FACTION_ALLIANCE then
@@ -1075,6 +1125,7 @@ function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
     end
 end
 
+-- Hide and Show the XP frame when entering and leaving pet battles.
 function XPBarNone:PET_BATTLE_OPENING_START()
     self.frame:Hide()
 end
@@ -1083,6 +1134,7 @@ function XPBarNone:PET_BATTLE_CLOSE()
     self.frame:Show()
 end
 
+-- Update XP bar data
 function XPBarNone:UpdateXPData()
     local prevXP = self.cXP or 0
     self.cXP = UnitXP("player")
@@ -1098,6 +1150,7 @@ function XPBarNone:UpdateXPData()
     self:UpdateXPBar()
 end
 
+-- Update rep bar data
 function XPBarNone:UpdateRepData()
     if not db.rep.showrepbar then
         return
@@ -1118,12 +1171,15 @@ function XPBarNone:UpdateRepData()
         return
     end
 
-    -- friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold
+    -- friendID, friendRep, friendMaxRep, friendName, friendText,
+    -- friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold
     local _, hasBonusRep, canBeLFGBonus
     local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
+
     if friendID then
         if nextFriendThresh then
-            -- Not yet "Exalted" with friend, use provided max for current level.
+            -- Not yet "Exalted" with friend, use provided max for current
+            -- level.
             repMax = nextFriendThresh
             repValue = friendRep - friendThresh
         else
@@ -1134,7 +1190,10 @@ function XPBarNone:UpdateRepData()
         repMax = repMax - friendThresh
         repMin = 0
     else
-        -- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
+        -- name, description, standingID, barMin, barMax, barValue, atWarWith,
+        -- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild,
+        -- factionID, hasBonusRepGain, canBeLFGBonus
+        -- = GetFactionInfo(factionIndex);
         _,_,_,_,_,_,_,_,_,_,_,_,_,_,hasBonusRep,canBeLFGBonus = GetFactionInfoByID(factionID)
 
         -- If a faction is exalted in Legion, it might be a paragon rep.
@@ -1174,22 +1233,23 @@ function XPBarNone:UpdateRepData()
     else
         repColour = FACTION_BAR_COLORS[repStanding]
     end
+
     self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
 
     if not db.general.hidetext then
         self.frame.bartext:SetText(
-        GetRepText(
-        repName,
-        repStanding,
-        repMin,
-        repMax,
-        repValue,
-        friendID,
-        friendTextLevel,
-        hasBonusRep,
-        canBeLFGBonus,
-        isFactionParagon
-        )
+            GetRepText(
+                repName,
+                repStanding,
+                repMin,
+                repMax,
+                repValue,
+                friendID,
+                friendTextLevel,
+                hasBonusRep,
+                canBeLFGBonus,
+                isFactionParagon
+            )
         )
     else
         self.frame.bartext:SetText("")
@@ -1264,6 +1324,7 @@ function XPBarNone:LevelUp(event, level)
         db.rep.showrepbar = true
         db.general.mouseover = false
     end
+
     self:UpdateXPBar()
 end
 
@@ -1284,21 +1345,28 @@ local function GetTipAnchor(frame, tooltip)
     local uiWidth = UIParent:GetWidth()
     local ttWidth = tooltip:GetWidth()
     local x, y = GetCursorPosition()
-    if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
+
+    if not x or not y then
+        return "TOPLEFT", "BOTTOMLEFT"
+    end
+
     -- Always use the LEFT of the bar as the anchor
     local hhalf = "LEFT"
     local vhalf = ((y / uiScale) > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
     local fX, fY = (x / uiScale) - (ttWidth / 2), y / uiScale
+
     -- OK, since :SetClampedToScreen is stupid, we'll check if the tooltip goes off the screen manually.
     -- OK, if it's less than 0, it's gone off the left edge.
     if fX < 0 then
         fX = 0
     end
+
     -- If it's greater than the size of the screen, it's off to the right
     -- Move it back in by a few pixels.
     if (x / uiScale) + (ttWidth / 2) > uiWidth then
         fX = fX - ((x / uiScale) + (ttWidth / 2) - uiWidth)
     end
+
     --XPBarNone:Print(("Anchoring: %s %s %s %s %s"):format(vhalf..hhalf, frame:GetName(), (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, fY))
     return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf, fX, 0
 end
@@ -1308,8 +1376,10 @@ function XPBarNone:MakeRepTooltip()
     if not LQT:IsAcquired("XPBarNoneTT") then
         tooltip = LQT:Acquire("XPBarNoneTT", 2, "CENTER", "LEFT")
     end
+
     tooltip:SetClampedToScreen(true)
     tooltip:SetScale(db.repmenu.scale)
+
     -- Anchor to the cursor position along the bar.
     tooltip:ClearAllPoints()
     tooltip:SetPoint(GetTipAnchor(self.frame.button, tooltip))
@@ -1329,8 +1399,10 @@ do
             else
                 FBC = FACTION_BAR_COLORS[k]
             end
+
             local hex = ("%02x%02x%02x"):format(FBC.r * 255, FBC.g * 255, FBC.b * 255)
             t[k] = hex
+
             return hex
         end,
     })
@@ -1348,7 +1420,10 @@ function XPBarNone:DrawRepMenu()
 
     -- Reputations
     for faction = 1, GetNumFactions() do
-        -- name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex);
+        -- name, description, standingID, barMin, barMax, barValue, atWarWith,
+        -- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild,
+        -- factionID, hasBonusRepGain, canBeLFGBonus
+        -- = GetFactionInfo(factionIndex);
         local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID,hasBonusRep,canBeLFGBonus = GetFactionInfo(faction)
 
         -- Set these to previous max values for exalted. Legion changed how
@@ -1423,6 +1498,7 @@ function XPBarNone:DrawRepMenu()
             --linenum = tooltip:AddLine(iconPath, name)
             linenum = tooltip:AddLine(nil)
             tooltip:SetCell(linenum, 1, iconPath, NormalFont)
+
             -- If this header also has rep, then change the header slightly
             -- and fix the tooltip.
             if hasRep then
@@ -1466,7 +1542,10 @@ end
 function XPBarNone:RestorePosition()
     local x = db.general.posx
     local y = db.general.posy
-    if not x or not y then return end
+
+    if not x or not y then
+        return
+    end
 
     local s = self.frame:GetEffectiveScale()
 
