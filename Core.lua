@@ -25,6 +25,7 @@ local math_min = math.min
 local BreakUpLargeNumbers = BreakUpLargeNumbers
 local CollapseFactionHeader = CollapseFactionHeader
 local ExpandFactionHeader = ExpandFactionHeader
+local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local GetGuildInfo = GetGuildInfo
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
@@ -1092,11 +1093,13 @@ function XPBarNone:MediaUpdate()
 end
 
 -- Check for faction updates for the auto rep watching
-function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype, faction, amount)
+function XPBarNone:COMBAT_TEXT_UPDATE(event, msgtype)
     -- Abort if it's not a FACTION update
     if msgtype ~= "FACTION" then
         return
     end
+
+    local faction, amount = GetCurrentCombatTextEventInfo()
 
     -- If we're watching reputations automatically
     if db.rep.autowatchrep then
