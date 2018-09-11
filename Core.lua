@@ -44,6 +44,13 @@ local SetWatchedFactionIndex = SetWatchedFactionIndex
 local UnitLevel = UnitLevel
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
+local GetItemInfo = GetItemInfo
+local GetContainerItemInfo = GetContainerItemInfo
+local GetInventoryItemID = GetInventoryItemID
+local HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
+local FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
+local GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
+local GetAzeritePowerLevel = C_AzeriteItem.GetPowerLevel
 
 -- WoW constants
 local BACKGROUND = BACKGROUND
@@ -131,6 +138,11 @@ local defaults = {
             showrepbar = false,
             autotrackguild = false,
         },
+        -- Azerite Bar
+        azerite = {
+            azerstr = "[name]: [curXP]/[maxXP] :: [curPC] through level [pLVL] :: [needXP] AP left",
+            showazerbar = false,
+        },
         -- Colours of the various bars
         -- We don't currently support alpha, but set it here so that we don't get
         -- pointless vars in the savedvariables file.
@@ -141,6 +153,7 @@ local defaults = {
             remaining = { r = 0.82, g = 0, b = 0, a = 1 },
             background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
             exalted = { r = 0, g = 0.77, b = 0.63, a = 1 },
+            azerite = { r = .78, g = 0.7, r = 0.45, a = 1},
             xptext = { r = 1, g = 1, b = 1, a = 1 },
             reptext = { r = 1, g = 1, b = 1, a = 1 },
         },
@@ -444,6 +457,39 @@ local function GetOptions(uiTypes, uiName, appName)
         }
         return options
     end
+    if appName == "XPBarNone-Azer" then
+        local options = {
+            type = "group",
+            name = L["Azerite Bar"],
+            get = function(info) return db.azerite[info[#info]] end,
+            set = function(info, value)
+                db.azerite[info[#info]] = value
+                self:UpdateDynamicBars()
+                self:UpdateXPBar()
+            end,
+            args = {
+                azerdesc = {
+                    type = "description",
+                    order = 0,
+                    name = L["Azerite Bar related options"],
+                },
+                azerstring = {
+                    name = L["Customise Text"],
+                    desc = L["Customise the Azerite text string."],
+                    type = "input",
+                    order = 100,
+                    width = "full",
+                },
+                showazerbar = {
+                    name = L["Show Azerite"],
+                    desc = L["Show the azerite bar instead of the XP bar when on max level."],
+                    type = "toggle",
+                    order = 200,
+                },
+            },
+        }
+        return options
+    end
     if appName == "XPBarNone-Colours" then
         local options = {
             type = "group",
@@ -504,15 +550,22 @@ local function GetOptions(uiTypes, uiName, appName)
                     order = 500,
                     hasAlpha = true,
                 },
+                azerite = {
+                    name = L["Azerite Bar"],
+                    desc = L["Set the colour of the Azerite Power bar."],
+                    type = "color",
+                    order = 550,
+                    hasAlpha = true,
+                },
                 xptext = {
-                    name = "XP Text",
+                    name = L["XP Text"],
                     desc = L["Set the colour of the XP text."],
                     type = "color",
                     order = 600,
                     hasAlpha = true,
                 },
                 reptext = {
-                    name = "Rep Text",
+                    name = L["Rep Text"],
                     desc = L["Set the colour of the Reputation text."],
                     type = "color",
                     order = 700,
@@ -692,11 +745,13 @@ function XPBarNone:OnInitialize()
     ACRegistry:RegisterOptionsTable("XPBarNone-General", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-XP", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-Rep", GetOptions)
+    ACRegistry:RegisterOptionsTable("XPBarNone-Azer", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-Colours", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-RepMenu", GetOptions)
     ACDialog:AddToBlizOptions("XPBarNone-General", myName)
     ACDialog:AddToBlizOptions("XPBarNone-XP", L["XP Bar"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-Rep", L["Reputation Bar"], myName)
+    ACDialog:AddToBlizOptions("XPBarNone-Azer", L["Azerite Bar"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-RepMenu", L["Reputation Menu"], myName)
     -- Register a chat command to open options
@@ -717,6 +772,10 @@ function XPBarNone:OnEnable()
         self:CreateXPBar()
     end
 
+    -- Generic Events
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", "UpdateXPBar")
+    self:RegisterEvent("CVAR_UPDATE", "UpdateXPBar")
+
     -- XP Events
     self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
     self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
@@ -726,6 +785,9 @@ function XPBarNone:OnEnable()
     -- Rep Events
     self:RegisterEvent("UPDATE_FACTION", "UpdateXPBar")
 
+    -- Azerite Power Event
+    self:RegisterEvent("AZERITE_ITEM_EXPERIENCE_CHANGED", "UpdateXPBar")
+    
     -- Only register this one if we're auto watching rep.
     if db.rep.autowatchrep then
         self:RegisterEvent("COMBAT_TEXT_UPDATE")
@@ -833,6 +895,39 @@ local function GetXPText(restedXP)
 
     return text
 end
+
+-- Get the Azerite bar text
+local function GetAzerText(name, currAP, maxAP, level)
+    local text = db.azerite.azerstring
+
+    text = text:gsub("%[name%]", name)
+
+    text = text:gsub("%[curXP%]", commify(currAP))
+    text = text:gsub("%[maxXP%]", commify(maxAP))
+
+    text = text:gsub("%[curPC%]", ("%.1f%%%%"):format(currAP / maxAP * 100))
+    text = text:gsub("%[needPC%]", ("%.1f%%%%"):format(100 - (currAP / maxAP * 100)))
+    text = text:gsub("%[pLVL%]", level)
+    text = text:gsub("%[nLVL%]", level + 1)
+    text = text:gsub("%[needXP%]", commify(maxAP - currAP))
+
+    return text
+end
+
+local function GetAzeriteItemName(item)
+    local name = ""
+    if item then
+        local itemID --Heart of Azeroth ID = 158075
+        if item:IsBagAndSlot() then
+            itemID = select(10, GetContainerItemInfo(item:GetBagAndSlot()))
+        else
+            itemID = GetInventoryItemID("player", item:GetEquipmentSlot())
+        end
+        name = (GetItemInfo(itemID))
+    end
+    return name
+end
+
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
@@ -1055,6 +1150,7 @@ function XPBarNone:CreateXPBar()
     -- Bubbles
     self.frame.bubbles = CreateFrame("StatusBar", "XPBarNoneBubbles", self.frame)
     self.frame.bubbles:SetStatusBarTexture("Interface\\AddOns\\XPBarNone\\Textures\\bubbles")
+    self.frame.bubbles:SetStatusBarColor(0, 0, 0, 0.5) -- Semitransparent ticks - smoother look
     self.frame.bubbles:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
     self.frame.bubbles:SetWidth(self.frame:GetWidth() - 4)
     self.frame.bubbles:SetHeight(self.frame:GetHeight() - 8)
@@ -1274,40 +1370,56 @@ function XPBarNone:UpdateXPBar()
         end
     end
 
-    local restedXP = GetXPExhaustion()
+    local restedXP, xpText, currXP, maxXP, barColor
 
-    if restedXP == nil then
+    if db.azerite.showazerbar and UnitLevel("player") == maxPlayerLevel and HasActiveAzeriteItem() then
+        local item = FindActiveAzeriteItem()
+        if item then
+            local name = GetAzeriteItemName(item)
+            currXP, maxXP = GetAzeriteItemXPInfo(item)
+            xpText = GetAzerText(name, currXP, maxXP, GetAzeritePowerLevel(item))
+        else
+            currXP, maxXP, xpText = 0, 1, L["Azerite item not found!"]
+        end
+        barColor = db.colours.azerite
         if self.frame.remaining:IsVisible() then
             self.frame.remaining:Hide()
         end
-        local normal = db.colours.normal
-        self.frame.xpbar:SetStatusBarColor(normal.r, normal.g, normal.b, normal.a)
     else
-        self.frame.remaining:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
-        self.frame.remaining:SetValue(self.cXP + restedXP)
-
-        local remaining = db.colours.remaining
-        self.frame.remaining:SetStatusBarColor(remaining.r, remaining.g, remaining.b, remaining.a)
-
-        -- Do we want to indicate rest?
-        if IsResting() and db.xp.indicaterest then
-            local resting = db.colours.resting
-            self.frame.xpbar:SetStatusBarColor(resting.r, resting.g, resting.b, resting.a)
+        restedXP = GetXPExhaustion()
+        if restedXP == nil then
+            if self.frame.remaining:IsVisible() then
+                self.frame.remaining:Hide()
+            end
+            barColor = db.colours.normal
         else
-            local rested = db.colours.rested
-            self.frame.xpbar:SetStatusBarColor(rested.r, rested.g, rested.b, rested.a)
+            self.frame.remaining:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
+            self.frame.remaining:SetValue(self.cXP + restedXP)
+
+            local remaining = db.colours.remaining
+            self.frame.remaining:SetStatusBarColor(remaining.r, remaining.g, remaining.b, remaining.a)
+
+            -- Do we want to indicate rest?
+            if IsResting() and db.xp.indicaterest then
+                barColor = db.colours.resting
+            else
+                barColor = db.colours.rested
+            end
+
+            -- Show remaining rested XP?
+            if db.xp.showremaining then
+                self.frame.remaining:Show()
+            else
+                self.frame.remaining:Hide()
+            end
         end
 
-        -- Show remaining rested XP?
-        if db.xp.showremaining then
-            self.frame.remaining:Show()
-        else
-            self.frame.remaining:Hide()
-        end
+        currXP, maxXP, xpText = self.cXP, self.nXP, GetXPText(restedXP)
     end
 
-    self.frame.xpbar:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
-    self.frame.xpbar:SetValue(self.cXP)
+    self.frame.xpbar:SetMinMaxValues(math_min(0, currXP), maxXP)
+    self.frame.xpbar:SetValue(currXP)
+    self.frame.xpbar:SetStatusBarColor(barColor.r, barColor.g, barColor.b, barColor.a)
 
     -- Set the colour of the bar text
     local txtcol = db.colours.xptext
@@ -1315,7 +1427,7 @@ function XPBarNone:UpdateXPBar()
 
     -- Hide the text or not?
     if not db.general.hidetext then
-        self.frame.bartext:SetText(GetXPText(restedXP))
+        self.frame.bartext:SetText(xpText)
     else
         self.frame.bartext:SetText("")
     end
@@ -1323,7 +1435,7 @@ end
 
 -- When max level is hit, show only the rep bar.
 function XPBarNone:LevelUp(event, level)
-    if level == maxPlayerLevel then
+    if not db.azerite.showazerbar and level == maxPlayerLevel then
         db.rep.showrepbar = true
         db.general.mouseover = false
     end
@@ -1333,7 +1445,7 @@ end
 
 -- Dynamic bars, switch between rep/level when using a single profile for all char.s
 function XPBarNone:UpdateDynamicBars()
-    if UnitLevel("player") == maxPlayerLevel then
+    if not db.azerite.showazerbar and UnitLevel("player") == maxPlayerLevel then
         db.rep.showrepbar = true
         db.general.mouseover = false
     else
