@@ -774,8 +774,7 @@ function XPBarNone:OnEnable()
 
     -- Generic Events
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "UpdateXPBar")
-    self:RegisterEvent("CVAR_UPDATE", "UpdateXPBar")
-
+    
     -- XP Events
     self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
     self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
@@ -915,7 +914,7 @@ local function GetAzerText(name, currAP, maxAP, level)
 end
 
 local function GetAzeriteItemName(item)
-    local name = ""
+    local name = nil
     if item then
         local itemID --Heart of Azeroth ID = 158075
         if item:IsBagAndSlot() then
@@ -923,9 +922,14 @@ local function GetAzeriteItemName(item)
         else
             itemID = GetInventoryItemID("player", item:GetEquipmentSlot())
         end
-        name = (GetItemInfo(itemID))
+        -- HACK: When first entering world, script gets itemID = nil|0
+        -- Just hardcode Heart of Azeroth ID in this case
+        if itemID and itemID > 0 then
+            -- Also name is not retrieved in this case
+            name = GetItemInfo(itemID)
+        end
     end
-    return name
+    return name or "???"
 end
 
 
