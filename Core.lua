@@ -100,6 +100,19 @@ LSM3:Register("statusbar", "Waves", "Interface\\AddOns\\XPBarNone\\Textures\\wav
 -- SavedVariables stored here later
 local db
 
+-- Artifact item title color
+local artColor
+
+do
+    local color = ITEM_QUALITY_COLORS[6]
+    artColor = {
+        r = qualityColorEntry.r,
+        g = qualityColorEntry.g,
+        b = qualityColorEntry.b,
+        a = qualityColorEntry.a
+    }
+end
+
 -- Default settings
 local defaults = {
     profile = {
@@ -153,7 +166,7 @@ local defaults = {
             remaining = { r = 0.82, g = 0, b = 0, a = 1 },
             background = { r = 0.5, g = 0.5, b = 0.5, a = 0.5 },
             exalted = { r = 0, g = 0.77, b = 0.63, a = 1 },
-            azerite = { r = .78, g = 0.7, r = 0.45, a = 1},
+            azerite = artColor, -- azerite bar default color is a color of artifact item title
             xptext = { r = 1, g = 1, b = 1, a = 1 },
             reptext = { r = 1, g = 1, b = 1, a = 1 },
         },
