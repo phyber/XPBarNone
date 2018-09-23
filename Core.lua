@@ -106,10 +106,10 @@ local artColor
 do
     local color = ITEM_QUALITY_COLORS[6]
     artColor = {
-        r = qualityColorEntry.r,
-        g = qualityColorEntry.g,
-        b = qualityColorEntry.b,
-        a = qualityColorEntry.a
+        r = color.r,
+        g = color.g,
+        b = color.b,
+        a = color.a
     }
 end
 
@@ -486,7 +486,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     order = 0,
                     name = L["Azerite Bar related options"],
                 },
-                azerstring = {
+                azerstr = {
                     name = L["Customise Text"],
                     desc = L["Customise the Azerite text string."],
                     type = "input",
@@ -910,7 +910,7 @@ end
 
 -- Get the Azerite bar text
 local function GetAzerText(name, currAP, maxAP, level)
-    local text = db.azerite.azerstring
+    local text = db.azerite.azerstr
 
     text = text:gsub("%[name%]", name)
 
