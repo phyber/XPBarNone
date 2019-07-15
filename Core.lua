@@ -786,9 +786,6 @@ function XPBarNone:OnEnable()
         self:CreateXPBar()
     end
 
-    -- Generic Events
-    self:RegisterEvent("PLAYER_ENTERING_WORLD", "UpdateXPBar")
-    
     -- XP Events
     self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
     self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
