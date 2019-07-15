@@ -46,3 +46,27 @@ Token        | Description
 `[repPC]`    | Your progress through the current standing, displayed as a percentage.
 `[needRep]`  | Shows how many more rep points you need for the next rep level.
 `[needPC]`   | Shows how much more reputation you need to progress to the next level as a percentage.
+
+## Azerite Bar (Heart of Azeroth)
+
+The default string used to create the Azerite Bar is:
+`[name]: [curXP]/[maxXP] :: [curPC] through level [pLVL] :: [needXP] AP left`
+
+This would be displayed as the following:
+`Heart of Azeroth: 30/6,730 :: 0.4% through level 48 :: 6,700 AP left`
+
+The available replacements are:
+
+Token      | Description
+-----------|------------
+`[name]`   | Localized item name for the [Heart of Azeroth]
+`[curXP]`  | Current amount of XP.
+`[maxXP]`  | XP  needed to progress to the next level.
+`[curPC]`  | Your progress through the current level, displayed as a percentage.
+`[needPC]` | The amount of XP you need to progress to the next level.  As a percentage.
+`[pLVL]`   | Current Heart of Azeroth level.
+`[nLVL]`   | Next Heart of Azeroth level.
+`[needXP]` | The amount of XP remaining until the next level.
+
+<!-- Document links -->
+[Heart of Azeroth]: https://www.wowhead.com/item=158075/heart-of-azeroth
