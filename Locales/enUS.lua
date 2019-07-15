@@ -57,6 +57,11 @@ L["Auto Track Guild Reputation"] = true
 L["Automatically track your guild reputation increases."] = true
 L["Show Reputation"] = true
 L["Show the reputation bar instead of the XP bar."] = true
+L["Azerite Bar"] = true
+L["Azerite Bar related options"] = true
+L["Customise the Azerite text string."] = true
+L["Show Azerite"] = true
+L["Show the azerite bar instead of the XP bar when on max level."] = true
 L["Bar Colours"] = true
 L["Set the colours for various XPBarNone bars."] = true
 L["Normal"] = true
@@ -68,7 +73,10 @@ L["Set the colour of the resting bar."] = true
 L["Remaining"] = true
 L["Set the colour of the remaining bar."] = true
 L["Set the colour of the Exalted reputation bar."] = true
+L["Set the colour of the Azerite Power bar."] = true
+L["XP Text"] = true
 L["Set the colour of the XP text."] = true
+L["Rep Text"] = true
 L["Set the colour of the Reputation text."] = true
 L["Set the colour of the background bar."] = true
 L["Reputation Menu"] = true
@@ -83,6 +91,8 @@ L["Profiles"] = true
 L["Standing: %s\nRep: %s/%s [%.1f%%]"] = true
 -- In function: XPBarNone:UpdateRepData()
 L["You need to select a faction to watch."] = true
+-- In function: XPBarNone:UpdateXPBar()
+L["Azerite item not found!"] = true
 -- In function: XPBarNone:DrawRepMenu()
 L["Click to expand %s faction listing"] = true
 L["Click to collapse %s faction listing"] = true
