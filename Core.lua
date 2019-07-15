@@ -102,14 +102,15 @@ local db
 
 -- Artifact item title color
 local artColor
-
 do
-    local color = ITEM_QUALITY_COLORS[6]
+    local LE_ITEM_QUALITY_ARTIFACT = LE_ITEM_QUALITY_ARTIFACT
+    local color = ITEM_QUALITY_COLORS[LE_ITEM_QUALITY_ARTIFACT]
+
     artColor = {
         r = color.r,
         g = color.g,
         b = color.b,
-        a = color.a
+        a = color.a,
     }
 end
 
