@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import fnmatch
 import os
 import re
@@ -53,6 +53,6 @@ for root, dirnames, filenames in os.walk('.'):
                         print("-- In function: {}()".format(current_func))
                         current_func = None
                     L = m.group('locale_string')
-                    if not L in FOUND_STRINGS:
+                    if L not in FOUND_STRINGS:
                         FOUND_STRINGS.append(L)
                         print("{} = true".format(L))
