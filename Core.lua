@@ -27,7 +27,6 @@ local CollapseFactionHeader = CollapseFactionHeader
 local ExpandFactionHeader = ExpandFactionHeader
 local FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
 local GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
-local GetAzeritePowerLevel = C_AzeriteItem.GetPowerLevel
 local GetContainerItemInfo = GetContainerItemInfo
 local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local GetGuildInfo = GetGuildInfo
@@ -58,6 +57,9 @@ local FACTION_ALLIANCE = FACTION_ALLIANCE
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
 local FACTION_HORDE = FACTION_HORDE
 local GUILD = GUILD
+
+-- We need to know the HoA itemID sometimes
+local HEARTOFAZEROTH_ITEMID = 158075
 
 -- Vars for averaging the kills to level
 local lastXPValues = {}
@@ -797,7 +799,7 @@ function XPBarNone:OnEnable()
 
     -- Azerite Power Event
     self:RegisterEvent("AZERITE_ITEM_EXPERIENCE_CHANGED", "UpdateXPBar")
-    
+
     -- Only register this one if we're auto watching rep.
     if db.rep.autowatchrep then
         self:RegisterEvent("COMBAT_TEXT_UPDATE")
@@ -850,6 +852,11 @@ end
 
 function XPBarNone:HideTooltip()
     GameTooltip:FadeOut()
+end
+
+-- Return a bool indicating if the given level is the max player level.
+local function IsPlayerMaxLevel(level)
+    return level == maxPlayerLevel
 end
 
 -- Get the number of kills to level
@@ -924,25 +931,71 @@ local function GetAzerText(name, currAP, maxAP, level)
     return text
 end
 
-local function GetAzeriteItemName(item)
-    local name = nil
-    if item then
-        local itemID --Heart of Azeroth ID = 158075
-        if item:IsBagAndSlot() then
-            itemID = select(10, GetContainerItemInfo(item:GetBagAndSlot()))
-        else
-            itemID = GetInventoryItemID("player", item:GetEquipmentSlot())
+-- Attempts to return the AzeriteItemName. Once found, it will be cached for
+-- the session.
+local GetAzeriteItemName
+do
+    local itemName
+
+    GetAzeriteItemName = function(item)
+        -- If we already looked up the item name, return our cached version
+        if itemName then
+            return itemName
         end
-        -- HACK: When first entering world, script gets itemID = nil|0
-        -- Just hardcode Heart of Azeroth ID in this case
-        if itemID and itemID > 0 then
-            -- Also name is not retrieved in this case
-            name = GetItemInfo(itemID)
+
+        -- Attempt to get the item name
+        if item then
+            local itemID
+
+            -- Could be in backbacks or equipped
+            if item:IsBagAndSlot() then
+                itemID = select(10, GetContainerItemInfo(item:GetBagAndSlot()))
+            else
+                itemID = GetInventoryItemID("player", item:GetEquipmentSlot())
+            end
+
+            -- HACK: When first entering world, script gets itemID = nil|0
+            -- Just hardcode Heart of Azeroth ID in this case
+            -- Heart of Azeroth ID = 158075
+            if itemID and itemID == HEARTOFAZEROTH_ITEMID then
+                -- GetItemInfo is asynchronous. We register a callback here to
+                -- set the itemName and refresh the XP bar once it has been
+                -- retrieved.
+                local itemCallback = Item:CreateFromItemID(itemID)
+                itemCallback:ContinueOnItemLoad(function()
+                    itemName = GetItemInfo(itemID)
+                    XPBarNone.UpdateXPBar(XPBarNone)
+                end)
+            end
         end
+
+        -- If we didn't get a localized string from the client, use ???.
+        -- Shouldn't be displayed for long due to the above callback.
+        return itemName or "???"
     end
-    return name or "???"
 end
 
+-- Get AP information for the Heart of Azeroth
+local GetHeartOfAzerothAPInfo
+do
+    local FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
+    local GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
+    local GetPowerLevel = C_AzeriteItem.GetPowerLevel
+
+    GetHeartOfAzerothAPInfo = function()
+        local itemLocation = FindActiveAzeriteItem()
+
+        if not itemLocation then
+            return
+        end
+
+        local curXP, maxXP = GetAzeriteItemXPInfo(itemLocation)
+        local itemLevel = GetPowerLevel(itemLocation)
+        local itemName = GetAzeriteItemName(itemLocation)
+
+        return itemName, itemLevel, curXP, maxXP
+    end
+end
 
 -- Set the watched faction based on the faction name
 local function SetWatchedFactionName(faction)
@@ -1385,28 +1438,33 @@ function XPBarNone:UpdateXPBar()
         end
     end
 
-    local restedXP, xpText, currXP, maxXP, barColor
+    local xpText, currXP, maxXP, barColor
 
-    if db.azerite.showazerbar and UnitLevel("player") == maxPlayerLevel and HasActiveAzeriteItem() then
-        local item = FindActiveAzeriteItem()
-        if item then
-            local name = GetAzeriteItemName(item)
-            currXP, maxXP = GetAzeriteItemXPInfo(item)
-            xpText = GetAzerText(name, currXP, maxXP, GetAzeritePowerLevel(item))
+    if db.azerite.showazerbar and IsPlayerMaxLevel(UnitLevel("player")) and HasActiveAzeriteItem() then
+        local itemName, itemLevel
+        itemName, itemLevel, currXP, maxXP = GetHeartOfAzerothAPInfo()
+
+        -- We might not find the HoA while loading
+        if itemName and currXP then
+            xpText = GetAzerText(itemName, currXP, maxXP, itemLevel)
         else
             currXP, maxXP, xpText = 0, 1, L["Azerite item not found!"]
         end
+
         barColor = db.colours.azerite
+
         if self.frame.remaining:IsVisible() then
             self.frame.remaining:Hide()
         end
     else
-        restedXP = GetXPExhaustion()
-        if restedXP == nil then
+        local restedXP = GetXPExhaustion()
+
+        if not restedXP then
+            barColor = db.colours.normal
+
             if self.frame.remaining:IsVisible() then
                 self.frame.remaining:Hide()
             end
-            barColor = db.colours.normal
         else
             self.frame.remaining:SetMinMaxValues(math_min(0, self.cXP), self.nXP)
             self.frame.remaining:SetValue(self.cXP + restedXP)
@@ -1450,7 +1508,7 @@ end
 
 -- When max level is hit, show only the rep bar.
 function XPBarNone:LevelUp(event, level)
-    if not db.azerite.showazerbar and level == maxPlayerLevel then
+    if not db.azerite.showazerbar and IsPlayerMaxLevel(level) then
         db.rep.showrepbar = true
         db.general.mouseover = false
     end
@@ -1460,7 +1518,7 @@ end
 
 -- Dynamic bars, switch between rep/level when using a single profile for all char.s
 function XPBarNone:UpdateDynamicBars()
-    if not db.azerite.showazerbar and UnitLevel("player") == maxPlayerLevel then
+    if not db.azerite.showazerbar and IsPlayerMaxLevel(UnitLevel("player")) then
         db.rep.showrepbar = true
         db.general.mouseover = false
     else
