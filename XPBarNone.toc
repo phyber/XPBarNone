@@ -12,6 +12,7 @@
 ## OptionalDeps: Ace3, LibQTip-1.0, LibSharedMedia-3.0
 ## X-Category: Interface Enhancements
 ## X-Embeds: Ace3, LibQTip-1.0, LibSharedMedia-3.0
+# X-Curse-Project-ID: 14910
 
 #@no-lib-strip@
 embeds.xml
