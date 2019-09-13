@@ -1,6 +1,6 @@
 -- Addon
 XPBarNone = LibStub("AceAddon-3.0"):NewAddon("XPBarNone", "AceEvent-3.0", "AceConsole-3.0")
-local self, XPBarNone = XPBarNone, XPBarNone
+local XPBarNone = XPBarNone
 
 -- Libs
 local L = LibStub("AceLocale-3.0"):GetLocale("XPBarNone")
@@ -187,7 +187,7 @@ local function GetOptions(uiTypes, uiName, appName)
             get = function(info) return db.general[info[#info]] end,
             set = function(info, value)
                 db.general[info[#info]] = value
-                self:UpdateXPBar()
+                XPBarNone:UpdateXPBar()
             end,
             args = {
                 xpbndesc = {
@@ -220,7 +220,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     order = 400,
                     set = function(info, value)
                         db.general.border = value
-                        self:ToggleBorder()
+                        XPBarNone:ToggleBorder()
                     end,
                 },
                 bubbles = {
@@ -230,7 +230,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     order = 500,
                     set = function(info, value)
                         db.general.bubbles = value
-                        self:ToggleBubbles()
+                        XPBarNone:ToggleBubbles()
                     end,
                 },
                 scale = {
@@ -241,10 +241,10 @@ local function GetOptions(uiTypes, uiName, appName)
                     min = 0.5,
                     max = 2,
                     set = function(info, value)
-                        self:SavePosition()
-                        self.frame:SetScale(value)
+                        XPBarNone:SavePosition()
+                        XPBarNone.frame:SetScale(value)
                         db.general.scale = value
-                        self:RestorePosition()
+                        XPBarNone:RestorePosition()
                     end,
                 },
                 width = {
@@ -258,7 +258,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     bigStep = 50,
                     set = function(info, value)
                         db.general.width = value
-                        self:SetWidth(value)
+                        XPBarNone:SetWidth(value)
                     end,
                 },
                 height = {
@@ -272,7 +272,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     bigStep = 5,
                     set = function(info, value)
                         db.general.height = value
-                        self:SetHeight(value)
+                        XPBarNone:SetHeight(value)
                     end
                 },
                 fontsize = {
@@ -285,7 +285,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     step = 1,
                     set = function(info, value)
                         db.general.fontsize = value
-                        self:SetFontOptions()
+                        XPBarNone:SetFontOptions()
                     end,
                 },
                 fontoutline = {
@@ -295,7 +295,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     order = 1000,
                     set = function(info, value)
                         db.general.fontoutline = value
-                        self:SetFontOptions()
+                        XPBarNone:SetFontOptions()
                     end,
                 },
                 textposition = {
@@ -309,7 +309,7 @@ local function GetOptions(uiTypes, uiName, appName)
                     bigStep = 5,
                     set = function(info, value)
                         db.general.textposition = value
-                        self:SetTextPosition(value)
+                        XPBarNone:SetTextPosition(value)
                     end,
                 },
                 mouseover = {
@@ -342,8 +342,8 @@ local function GetOptions(uiTypes, uiName, appName)
                     style = "dropdown",
                     set = function(info, value)
                         db.general.texture = value
-                        self:SetTexture(value)
-                        self:UpdateXPBar()
+                        XPBarNone:SetTexture(value)
+                        XPBarNone:UpdateXPBar()
                     end,
                 },
                 font = {
@@ -356,8 +356,8 @@ local function GetOptions(uiTypes, uiName, appName)
                     style = "dropdown",
                     set = function(info, value)
                         db.general.font = value
-                        self:SetFontOptions()
-                        self:UpdateXPBar()
+                        XPBarNone:SetFontOptions()
+                        XPBarNone:UpdateXPBar()
                     end,
                 },
                 hidetext = {
@@ -389,7 +389,7 @@ local function GetOptions(uiTypes, uiName, appName)
             get = function(info) return db.xp[info[#info]] end,
             set = function(info, value)
                 db.xp[info[#info]] = value
-                self:UpdateXPBar()
+                XPBarNone:UpdateXPBar()
             end,
             args = {
                 xpdesc = {
@@ -426,8 +426,8 @@ local function GetOptions(uiTypes, uiName, appName)
             name = L["Reputation Bar"],
             get = function(info) return db.rep[info[#info]] end,
             set = function(info, value)
-                db.rep[info[#info]] = value 
-                self:UpdateXPBar()
+                db.rep[info[#info]] = value
+                XPBarNone:UpdateXPBar()
             end,
             args = {
                 repdesc = {
@@ -478,8 +478,8 @@ local function GetOptions(uiTypes, uiName, appName)
             get = function(info) return db.azerite[info[#info]] end,
             set = function(info, value)
                 db.azerite[info[#info]] = value
-                self:UpdateDynamicBars()
-                self:UpdateXPBar()
+                XPBarNone:UpdateDynamicBars()
+                XPBarNone:UpdateXPBar()
             end,
             args = {
                 azerdesc = {
@@ -515,13 +515,13 @@ local function GetOptions(uiTypes, uiName, appName)
                 db.colours[info[#info]].r, db.colours[info[#info]].g, db.colours[info[#info]].b, db.colours[info[#info]].a = r, g, b, a
                 repHexColour[STANDING_EXALTED] = nil
                 local bgc = db.colours.background
-                self.frame.background:SetStatusBarColor(
+                XPBarNone.frame.background:SetStatusBarColor(
                 bgc.r,
                 bgc.g,
                 bgc.b,
                 bgc.a
                 )
-                self:UpdateXPBar()
+                XPBarNone:UpdateXPBar()
             end,
             args = {
                 coloursdesc = {
@@ -1002,7 +1002,7 @@ local function SetWatchedFactionName(faction)
         -- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild,
         -- factionID, hasBonusRepGain, canBeLFGBonus
         -- = GetFactionInfo(factionIndex);
-        local name,_,_,_,_,_,_,_,isHeader,_,_,isWatched,_,_,_,_ = GetFactionInfo(i)
+        local name,_,_,_,_,_,_,_,_,_,_,isWatched,_,_,_,_ = GetFactionInfo(i)
 
         if name == faction then
             -- If it's not watched and it's not a header
@@ -1596,7 +1596,7 @@ end
 
 -- Reputation menu
 function XPBarNone:DrawRepMenu()
-    local linenum = nil
+    local linenum
     local checkIcon = "|TInterface\\Buttons\\UI-CheckBox-Check:16:16:1:-1|t"
     local NormalFont = tooltip:GetFont()
     local GameTooltipTextSmall = GameTooltipTextSmall

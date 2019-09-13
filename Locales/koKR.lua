@@ -86,7 +86,7 @@ L["Text Position"] = "글자 위치"
 L["Select the position of the text on XPBarNone."] = "바에 표시할 글자의 위치를 선택합니다."
 L["Background Colour"] = "배경 색상"
 L["Set the colour of the background bar."] = "바의 배경 색상을 설정합니다."
-L["Set the colour of the Exalted reputation bar."] = "확고 평판바의 배경 색상을 변경합니다." 
+L["Set the colour of the Exalted reputation bar."] = "확고 평판바의 배경 색상을 변경합니다."
 -- Menu sections
 L["XP Bar"] = "경험치 바"
 L["Reputation Bar"] = "평판 바"
