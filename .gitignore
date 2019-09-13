@@ -1,3 +1,4 @@
 *~
 *.swp
+.release/
 __pycache__
