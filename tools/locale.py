@@ -12,16 +12,18 @@ if not L then return end
 """
 
 FOUND_STRINGS = []
-EXCLUDE_DIRS = [".git", "Libs", "Locales", "Textures"]
+EXCLUDE_DIRS = [".git", ".github", ".release", "Libs", "Locales", "Textures"]
 LOCALE_REGEX = re.compile(r"(?P<locale_string>L\[\".+\"\])")
 FUNCTION_REGEX = re.compile(
     r"^(?:local )?function (?P<function_name>.+)\(.*\)$")
 
 for root, dirnames, filenames in os.walk('.'):
+    # Don't walk excluded directories
     for excluded in EXCLUDE_DIRS:
         try:
             dirnames.remove(excluded)
-        except:
+        except ValueError:
+            # Value not in list
             pass
 
     for filename in fnmatch.filter(filenames, '*.lua'):
@@ -42,17 +44,22 @@ for root, dirnames, filenames in os.walk('.'):
                 try:
                     current_func = FUNCTION_REGEX.search(
                         line).group('function_name')
-                except:
+                except AttributeError:
+                    # Regex didn't match
                     pass
+
                 if m:
                     if not headerAdded:
                         print(LOCALE_HEADER)
                         headerAdded = True
                         print("-- File: {dir}/{filename}".format(**pathinfo))
+
                     if current_func:
                         print("-- In function: {}()".format(current_func))
                         current_func = None
+
                     L = m.group('locale_string')
+
                     if L not in FOUND_STRINGS:
                         FOUND_STRINGS.append(L)
                         print("{} = true".format(L))
