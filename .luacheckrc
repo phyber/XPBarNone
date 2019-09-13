@@ -71,6 +71,7 @@ read_globals = {
     "ExpandFactionHeader",
     "GameTooltip_SetDefaultAnchor",
     "GetAddOnMetadata",
+    "GetBuildInfo",
     "GetContainerItemInfo",
     "GetCurrentCombatTextEventInfo",
     "GetCursorPosition",

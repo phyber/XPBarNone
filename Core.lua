@@ -21,6 +21,20 @@ local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
 
+-- We need to know if we're in the Classic client at multiple points throughout
+-- the addon
+local IsClassic
+do
+    local version = select(4, GetBuildInfo())
+    local classic_versions = {
+        [11302] = true,
+    }
+
+    IsClassic = function()
+        return classic_versions[version]
+    end
+end
+
 -- WoW Functions
 local BreakUpLargeNumbers = BreakUpLargeNumbers
 local CollapseFactionHeader = CollapseFactionHeader
@@ -33,21 +47,69 @@ local GetItemInfo = GetItemInfo
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetFactionInfoByID = GetFactionInfoByID
-local GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
-local GetFriendshipReputation = GetFriendshipReputation
 local GetMouseButtonClicked = GetMouseButtonClicked
 local GetWatchedFactionInfo = GetWatchedFactionInfo
 local GetXPExhaustion = GetXPExhaustion
-local HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
 local IsControlKeyDown = IsControlKeyDown
-local IsFactionParagon = C_Reputation.IsFactionParagon
 local IsResting = IsResting
 local IsShiftKeyDown = IsShiftKeyDown
-local IsXPUserDisabled = IsXPUserDisabled
 local SetWatchedFactionIndex = SetWatchedFactionIndex
 local UnitLevel = UnitLevel
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
+
+-- Some functions don't exist in Classic. We set these conditionally depending
+-- on which client we're running on.
+local GetFactionParagonInfo
+local GetFriendshipReputation
+local HasActiveAzeriteItem
+local IsFactionParagon
+local IsXPUserDisabled
+local FindActiveAzeriteItem
+local GetAzeriteItemXPInfo
+local GetPowerLevel
+do
+    if IsClassic() then
+        -- Easier to stub these than add conditionals to the callers of this
+        -- function.
+        -- Friendship reputations don't exist in Classic
+        GetFriendshipReputation = function()
+            return nil
+        end
+
+        -- HasActiveAzeriteItem could be called at max level, but Classic has
+        -- no Azerite items.
+        -- This function gates calls to the following functions meaning we
+        -- don't have to stub them:
+        --  - FindActiveAzeriteItem
+        --  - GetAzeriteItemXPInfo
+        --  - GetPowerLevel
+        HasActiveAzeriteItem = function()
+            return false
+        end
+
+        -- GetFactionParagonInfo calls are gated by IsFactionParagon, so we
+        -- only need to stub this function.
+        IsFactionParagon = function()
+            return false
+        end
+
+        -- Users cannot disable XP gain in Classic.
+        IsXPUserDisabled = function()
+            return false
+        end
+    else
+        FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
+        GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
+        GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
+        GetFriendshipReputation = _G.GetFriendshipReputation
+        GetPowerLevel = C_AzeriteItem.GetPowerLevel
+        HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
+        IsFactionParagon = C_Reputation.IsFactionParagon
+        IsXPUserDisabled = _G.IsXPUserDisabled
+    end
+end
+
 
 -- WoW constants
 local BACKGROUND = BACKGROUND
@@ -82,6 +144,7 @@ local tooltip
 -- 4: Mists of Pandaria. Level 90
 -- 5: Warlords of Draenor. Level 100
 -- 6: Legion. Level 110
+-- 7: Battle for Azeroth. Level 120
 local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
 
 -- Register our textures
@@ -564,13 +627,6 @@ local function GetOptions(uiTypes, uiName, appName)
                     order = 500,
                     hasAlpha = true,
                 },
-                azerite = {
-                    name = L["Azerite Bar"],
-                    desc = L["Set the colour of the Azerite Power bar."],
-                    type = "color",
-                    order = 550,
-                    hasAlpha = true,
-                },
                 xptext = {
                     name = L["XP Text"],
                     desc = L["Set the colour of the XP text."],
@@ -594,6 +650,18 @@ local function GetOptions(uiTypes, uiName, appName)
                 },
             },
         }
+
+        -- Hide the Azerite Bar colour options in Classic
+        if not IsClassic() then
+            options.args.azerite = {
+                name = L["Azerite Bar"],
+                desc = L["Set the colour of the Azerite Power bar."],
+                type = "color",
+                order = 550,
+                hasAlpha = true,
+            }
+        end
+
         return options
     end
     if appName == "XPBarNone-RepMenu" then
@@ -752,6 +820,7 @@ function XPBarNone:OnInitialize()
     -- Get the DB.
     self.db = LibStub("AceDB-3.0"):New("XPBarNoneDB", defaults, true)
     db = self.db.profile
+
     -- Register options
     local myName = GetAddOnMetadata("XPBarNone", "Title")
     local ACRegistry = LibStub("AceConfigRegistry-3.0")
@@ -759,21 +828,29 @@ function XPBarNone:OnInitialize()
     ACRegistry:RegisterOptionsTable("XPBarNone-General", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-XP", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-Rep", GetOptions)
-    ACRegistry:RegisterOptionsTable("XPBarNone-Azer", GetOptions)
+
     ACRegistry:RegisterOptionsTable("XPBarNone-Colours", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-RepMenu", GetOptions)
     ACDialog:AddToBlizOptions("XPBarNone-General", myName)
     ACDialog:AddToBlizOptions("XPBarNone-XP", L["XP Bar"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-Rep", L["Reputation Bar"], myName)
-    ACDialog:AddToBlizOptions("XPBarNone-Azer", L["Azerite Bar"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-RepMenu", L["Reputation Menu"], myName)
+
+    -- No Azerite Item in Classic, hide the options
+    if not IsClassic() then
+        ACRegistry:RegisterOptionsTable("XPBarNone-Azer", GetOptions)
+        ACDialog:AddToBlizOptions("XPBarNone-Azer", L["Azerite Bar"], myName)
+    end
+
     -- Register a chat command to open options
     self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(myName) end)
+
     -- Profiles
     local popts = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
     ACRegistry:RegisterOptionsTable("XPBarNone-Profiles", popts)
     ACDialog:AddToBlizOptions("XPBarNone-Profiles", L["Profiles"], myName)
+
     -- For profile support. NYI
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
@@ -786,6 +863,16 @@ function XPBarNone:OnEnable()
         self:CreateXPBar()
     end
 
+    -- Some events don't exist in Classic
+    if not IsClassic() then
+        -- Azerite Power Event
+        self:RegisterEvent("AZERITE_ITEM_EXPERIENCE_CHANGED", "UpdateXPBar")
+
+        -- Used for hiding XP Bar during pet battles
+        self:RegisterEvent("PET_BATTLE_OPENING_START")
+        self:RegisterEvent("PET_BATTLE_CLOSE")
+    end
+
     -- XP Events
     self:RegisterEvent("PLAYER_XP_UPDATE", "UpdateXPData")
     self:RegisterEvent("PLAYER_LEVEL_UP", "LevelUp")
@@ -795,17 +882,10 @@ function XPBarNone:OnEnable()
     -- Rep Events
     self:RegisterEvent("UPDATE_FACTION", "UpdateXPBar")
 
-    -- Azerite Power Event
-    self:RegisterEvent("AZERITE_ITEM_EXPERIENCE_CHANGED", "UpdateXPBar")
-
     -- Only register this one if we're auto watching rep.
     if db.rep.autowatchrep then
         self:RegisterEvent("COMBAT_TEXT_UPDATE")
     end
-
-    -- Used for hiding XP Bar during pet battles
-    self:RegisterEvent("PET_BATTLE_OPENING_START")
-    self:RegisterEvent("PET_BATTLE_CLOSE")
 
     -- Register some LSM3 callbacks
     LSM3.RegisterCallback(self, "LibSharedMedia_SetGlobal", function(callback, mtype, override)
@@ -976,10 +1056,6 @@ end
 -- Get AP information for the Heart of Azeroth
 local GetHeartOfAzerothAPInfo
 do
-    local FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
-    local GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
-    local GetPowerLevel = C_AzeriteItem.GetPowerLevel
-
     GetHeartOfAzerothAPInfo = function()
         local itemLocation = FindActiveAzeriteItem()
 
