@@ -61,7 +61,6 @@ jobs:
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
         run: |
           /tmp/release.sh \
-            -d \
             -l \
             -u \
             -g 1.13.2
