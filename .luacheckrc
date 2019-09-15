@@ -15,6 +15,7 @@ max_line_length = false
 
 -- We don't want to check externals Libs or this config file
 exclude_files = {
+    ".release/",
     "Libs/",
     ".luacheckrc",
 }
@@ -104,9 +105,10 @@ read_globals = {
     "FACTION_BAR_COLORS",
     "FACTION_HORDE",
     "GUILD",
-    "MAX_PLAYER_LEVEL_TABLE",
-    "LE_ITEM_QUALITY_ARTIFACT",
     "ITEM_QUALITY_COLORS",
+    "LARGE_NUMBER_SEPERATOR",
+    "LE_ITEM_QUALITY_ARTIFACT",
+    "MAX_PLAYER_LEVEL_TABLE",
 
     -- Frames
     "GameTooltip",

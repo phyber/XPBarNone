@@ -36,7 +36,6 @@ do
 end
 
 -- WoW Functions
-local BreakUpLargeNumbers = BreakUpLargeNumbers
 local CollapseFactionHeader = CollapseFactionHeader
 local ExpandFactionHeader = ExpandFactionHeader
 local GetContainerItemInfo = GetContainerItemInfo
@@ -60,6 +59,7 @@ local UnitXPMax = UnitXPMax
 
 -- Some functions don't exist in Classic. We set these conditionally depending
 -- on which client we're running on.
+local BreakUpLargeNumbers
 local GetFactionParagonInfo
 local GetFriendshipReputation
 local HasActiveAzeriteItem
@@ -70,6 +70,24 @@ local GetAzeriteItemXPInfo
 local GetPowerLevel
 do
     if IsClassic() then
+        -- BreakUpLargeNumbers in Classic doesn't do anything. Implement it
+        -- ourselves.
+        local LARGE_NUMBER_SEPERATOR = LARGE_NUMBER_SEPERATOR
+
+        BreakUpLargeNumbers = function(num)
+            local str = ""
+            local count = 0
+            for d in tostring(num):reverse():gmatch("%d") do
+                if count ~= 0 and count % 3 == 0 then
+                    str = str .. LARGE_NUMBER_SEPERATOR .. d
+                else
+                    str = str .. d
+                end
+                count = count + 1
+            end
+            return str:reverse()
+        end
+
         -- Easier to stub these than add conditionals to the callers of this
         -- function.
         -- Friendship reputations don't exist in Classic
@@ -99,6 +117,7 @@ do
             return false
         end
     else
+        BreakUpLargeNumbers = _G.BreakUpLargeNumbers
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
