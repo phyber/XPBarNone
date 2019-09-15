@@ -445,6 +445,7 @@ local function GetOptions(uiTypes, uiName, appName)
         }
         return options
     end
+
     if appName == "XPBarNone-XP" then
         local options = {
             type = "group",
@@ -483,6 +484,7 @@ local function GetOptions(uiTypes, uiName, appName)
         }
         return options
     end
+
     if appName == "XPBarNone-Rep" then
         local options = {
             type = "group",
@@ -515,12 +517,6 @@ local function GetOptions(uiTypes, uiName, appName)
                         XPBarNone:ToggleAutoWatch()
                     end,
                 },
-                autotrackguild = {
-                    name = L["Auto Track Guild Reputation"],
-                    desc = L["Automatically track your guild reputation increases."],
-                    type = "toggle",
-                    order = 250,
-                },
                 showrepbar = {
                     name = L["Show Reputation"],
                     desc = L["Show the reputation bar instead of the XP bar."],
@@ -532,8 +528,21 @@ local function GetOptions(uiTypes, uiName, appName)
                 },
             },
         }
+
+        -- Hide guild rep tracking toggle in Classic
+        if not IsClassic() then
+            options.args.autotrackguild = {
+                name = L["Auto Track Guild Reputation"],
+                desc = L["Automatically track your guild reputation increases."],
+                type = "toggle",
+                order = 250,
+            }
+        end
+
         return options
     end
+
+    -- This appName never gets called if we're IsClassic
     if appName == "XPBarNone-Azer" then
         local options = {
             type = "group",
@@ -567,6 +576,7 @@ local function GetOptions(uiTypes, uiName, appName)
         }
         return options
     end
+
     if appName == "XPBarNone-Colours" then
         local options = {
             type = "group",
@@ -664,6 +674,7 @@ local function GetOptions(uiTypes, uiName, appName)
 
         return options
     end
+
     if appName == "XPBarNone-RepMenu" then
         local options = {
             type = "group",
