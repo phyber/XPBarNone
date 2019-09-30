@@ -1,6 +1,8 @@
 # XPBarNone
 
-This is a list of the runes you can use to customise XPBarNone.
+_XPBarNone_ is an XP bar addon for [World of Warcraft]. The bar can switch
+between XP, Reputation, and [Heart of Azeroth] progress depending on your
+settings.
 
 ## Experience Bar
 
@@ -70,3 +72,4 @@ Token      | Description
 
 <!-- Document links -->
 [Heart of Azeroth]: https://www.wowhead.com/item=158075/heart-of-azeroth
+[World of Warcraft]: https://worldofwarcraft.com/
