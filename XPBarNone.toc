@@ -1,5 +1,5 @@
 #@retail@
-## Interface: 80205
+## Interface: 80300
 #@end-retail@
 #@non-retail@
 # ## Interface: 11303
@@ -13,6 +13,7 @@
 ## X-Category: Interface Enhancements
 ## X-Embeds: Ace3, LibQTip-1.0, LibSharedMedia-3.0
 ## X-Curse-Project-ID: 14910
+## X-WoWI-ID: 4849
 
 #@no-lib-strip@
 embeds.xml
