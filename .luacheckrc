@@ -81,6 +81,7 @@ read_globals = {
     "GetGuildInfo",
     "GetInventoryItemID",
     "GetItemInfo",
+    "GetMaxLevelForPlayerExpansion",
     "GetMouseButtonClicked",
     "GetNumFactions",
     "GetFactionInfo",
@@ -101,14 +102,13 @@ read_globals = {
 
     -- FrameXML Globals
     "BACKGROUND",
+    "Enum",
     "FACTION_ALLIANCE",
     "FACTION_BAR_COLORS",
     "FACTION_HORDE",
     "GUILD",
     "ITEM_QUALITY_COLORS",
     "LARGE_NUMBER_SEPERATOR",
-    "LE_ITEM_QUALITY_ARTIFACT",
-    "MAX_PLAYER_LEVEL_TABLE",
 
     -- Frames
     "GameTooltip",
