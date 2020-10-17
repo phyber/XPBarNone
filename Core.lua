@@ -73,6 +73,7 @@ local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local GetGuildInfo = GetGuildInfo
 local GetInventoryItemID = GetInventoryItemID
 local GetItemInfo = GetItemInfo
+local GetMaxLevelForPlayerExpansion = GetMaxLevelForPlayerExpansion
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetFactionInfoByID = GetFactionInfoByID
@@ -159,7 +160,6 @@ do
     end
 end
 
-
 -- WoW constants
 local BACKGROUND = BACKGROUND
 local FACTION_ALLIANCE = FACTION_ALLIANCE
@@ -194,7 +194,7 @@ local tooltip
 -- 5: Warlords of Draenor. Level 100
 -- 6: Legion. Level 110
 -- 7: Battle for Azeroth. Level 120
-local maxPlayerLevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
+local maxPlayerLevel = GetMaxLevelForPlayerExpansion()
 
 -- Register our textures
 LSM3:Register("statusbar", "BantoBar", "Interface\\AddOns\\XPBarNone\\Textures\\bantobar")
@@ -215,8 +215,8 @@ local db
 -- Artifact item title color
 local artColor
 do
-    local LE_ITEM_QUALITY_ARTIFACT = LE_ITEM_QUALITY_ARTIFACT
-    local color = ITEM_QUALITY_COLORS[LE_ITEM_QUALITY_ARTIFACT]
+    local artifactQuality = Enum.ItemQuality.Artifact
+    local color = ITEM_QUALITY_COLORS[artifactQuality]
 
     artColor = {
         r = color.r,
@@ -1240,7 +1240,7 @@ function XPBarNone:CreateXPBar()
     end
 
     -- Main Frame
-    self.frame = CreateFrame("Frame", "XPBarNoneFrame", UIParent)
+    self.frame = CreateFrame("Frame", "XPBarNoneFrame", UIParent, "BackdropTemplate")
     self.frame:SetFrameStrata(db.general.strata)
     self.frame:SetMovable(true)
     self.frame:Hide()
