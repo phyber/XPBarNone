@@ -22,11 +22,11 @@ local math_huge = math.huge
 local math_min = math.min
 
 -- Current expansion ID for Retail
-local NUM_EXPANSIONS = 7
+local NUM_EXPANSIONS = 8
 
 -- A recent TOC for retail, where recent should be any valid TOC for the
 -- current expansion number
-local RECENT_RETAIL_TOC = 80205
+local RECENT_RETAIL_TOC = 90001
 
 -- We need to know if we're in the Classic client at multiple points throughout
 -- the addon to decide which version of a function to use.
@@ -73,7 +73,6 @@ local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local GetGuildInfo = GetGuildInfo
 local GetInventoryItemID = GetInventoryItemID
 local GetItemInfo = GetItemInfo
-local GetMaxLevelForPlayerExpansion = GetMaxLevelForPlayerExpansion
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetFactionInfoByID = GetFactionInfoByID
@@ -91,14 +90,15 @@ local UnitXPMax = UnitXPMax
 -- Some functions don't exist in Classic. We set these conditionally depending
 -- on which client we're running on.
 local BreakUpLargeNumbers
+local FindActiveAzeriteItem
+local GetAzeriteItemXPInfo
 local GetFactionParagonInfo
 local GetFriendshipReputation
+local GetMaxLevelForPlayerExpansion
+local GetPowerLevel
 local HasActiveAzeriteItem
 local IsFactionParagon
 local IsXPUserDisabled
-local FindActiveAzeriteItem
-local GetAzeriteItemXPInfo
-local GetPowerLevel
 do
     if IsClassic() then
         -- BreakUpLargeNumbers in Classic doesn't do anything. Implement it
@@ -124,6 +124,11 @@ do
         -- Friendship reputations don't exist in Classic
         GetFriendshipReputation = function()
             return nil
+        end
+
+        -- This function doesn't currently exist in Classic.
+        GetMaxLevelForPlayerExpansion = function()
+            return 60
         end
 
         -- HasActiveAzeriteItem could be called at max level, but Classic has
@@ -153,6 +158,7 @@ do
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
         GetFriendshipReputation = _G.GetFriendshipReputation
+        GetMaxLevelForPlayerExpansion = _G.GetMaxLevelForPlayerExpansion
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
         IsFactionParagon = C_Reputation.IsFactionParagon
@@ -185,15 +191,7 @@ local mouseovershift
 -- Rep menu tooltip
 local tooltip
 
--- For finding the max player level
--- 0: WoW Classic. Level 60
--- 1: The Burning Cruade. Level 70
--- 2: Wrath of the Lich King. Level 80
--- 3: Cataclysm. Level 85
--- 4: Mists of Pandaria. Level 90
--- 5: Warlords of Draenor. Level 100
--- 6: Legion. Level 110
--- 7: Battle for Azeroth. Level 120
+-- Used for automatic switching to rep bar if enabled
 local maxPlayerLevel = GetMaxLevelForPlayerExpansion()
 
 -- Register our textures
@@ -1240,7 +1238,7 @@ function XPBarNone:CreateXPBar()
     end
 
     -- Main Frame
-    self.frame = CreateFrame("Frame", "XPBarNoneFrame", UIParent, "BackdropTemplate")
+    self.frame = CreateFrame("Frame", "XPBarNoneFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     self.frame:SetFrameStrata(db.general.strata)
     self.frame:SetMovable(true)
     self.frame:Hide()

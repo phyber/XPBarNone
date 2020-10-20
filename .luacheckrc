@@ -115,6 +115,9 @@ read_globals = {
     "UIParent",
     "WorldFrame",
 
+    -- Mixins
+    "BackdropTemplateMixin",
+
     -- Fonts
     "GameFontNormal",
     "GameTooltipTextSmall",
