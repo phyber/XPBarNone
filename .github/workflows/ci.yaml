@@ -35,9 +35,19 @@ jobs:
       #   -d Skip upload
       #   -l Skip localisation replacements
       #   -u Use Unix line-endings
-      #   -g Classic version
+      #   -g Game version
       #   -w WoWInterface ID
       #
+      # Release Burning Crusade Classic Addon on both CurseForge and
+      # WoWInterface.
+      - name: 'Release Burning Crusade Classic Addon'
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+          WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
+        uses: 'BigWigsMods/packager@v1'
+        with:
+          args: '-l -u -g bcc'
       # Release Classic Addon on both CurseForge and WoWInterface.
       - name: 'Release Classic Addon'
         env:
