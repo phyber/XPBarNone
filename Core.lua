@@ -21,13 +21,6 @@ local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
 
--- Current expansion ID for Retail
-local NUM_EXPANSIONS = 8
-
--- A recent TOC for retail, where recent should be any valid TOC for the
--- current expansion number
-local RECENT_RETAIL_TOC = 90001
-
 -- We need to know if we're in the Classic client at multiple points throughout
 -- the addon to decide which version of a function to use.
 -- This detection is incredibly brittle, but Blizzard has decided not to give
@@ -39,29 +32,20 @@ local RECENT_RETAIL_TOC = 90001
 -- relying on TOC alone.
 local IsClassic
 do
-    -- If the number of expansions returned by the client matches or is greater
-    -- than the number of expansions we expect to see for retail, it's probably
-    -- retail.
-    local function IsRetailExpansionCount()
-        return _G.GetNumExpansions() >= NUM_EXPANSIONS
-    end
-
-    -- If the version returned by the client is greater than or equal to a
-    -- recent Retail TOC, then it's probably retail.
-    local function IsRetailExpansionToc()
-        local version = select(4, GetBuildInfo())
-        return version >= RECENT_RETAIL_TOC
-    end
-
-    -- If the expansion count and TOC check pass our tests, we're probably on
-    -- retail.
-    local is_retail = IsRetailExpansionCount() and IsRetailExpansionToc()
-
-    -- The inverse of the above should be true for Classic.
-    local is_classic = not is_retail
+    -- Globals set in FrameXML/BNet.lua
+    local is_classic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 
     IsClassic = function()
         return is_classic
+    end
+end
+
+local IsBurningCrusadeClassic
+do
+    local is_bcc = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
+
+    IsBurningCrusadeClassic = function()
+        return is_bcc
     end
 end
 
@@ -100,7 +84,8 @@ local HasActiveAzeriteItem
 local IsFactionParagon
 local IsXPUserDisabled
 do
-    if IsClassic() then
+    -- If we're in either of Classic or Burning Crusade Classic, set these
+    if IsClassic() or IsBurningCrusadeClassic() then
         -- BreakUpLargeNumbers in Classic doesn't do anything. Implement it
         -- ourselves.
         local LARGE_NUMBER_SEPERATOR = LARGE_NUMBER_SEPERATOR
@@ -108,6 +93,7 @@ do
         BreakUpLargeNumbers = function(num)
             local str = ""
             local count = 0
+
             for d in tostring(num):reverse():gmatch("%d") do
                 if count ~= 0 and count % 3 == 0 then
                     str = str .. LARGE_NUMBER_SEPERATOR .. d
@@ -116,6 +102,7 @@ do
                 end
                 count = count + 1
             end
+
             return str:reverse()
         end
 
@@ -124,11 +111,6 @@ do
         -- Friendship reputations don't exist in Classic
         GetFriendshipReputation = function()
             return nil
-        end
-
-        -- This function doesn't currently exist in Classic.
-        GetMaxLevelForPlayerExpansion = function()
-            return 60
         end
 
         -- HasActiveAzeriteItem could be called at max level, but Classic has
@@ -151,6 +133,18 @@ do
         -- Users cannot disable XP gain in Classic.
         IsXPUserDisabled = function()
             return false
+        end
+    end
+
+    if IsClassic() then
+        -- This function doesn't exist in Classic.
+        GetMaxLevelForPlayerExpansion = function()
+            return 60
+        end
+    elseif IsBurningCrusadeClassic() then
+        -- This function doesn't exist in Burning Crusade Classic.
+        GetMaxLevelForPlayerExpansion = function()
+            return 70
         end
     else
         BreakUpLargeNumbers = _G.BreakUpLargeNumbers
