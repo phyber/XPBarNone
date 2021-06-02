@@ -109,9 +109,13 @@ read_globals = {
     "GUILD",
     "ITEM_QUALITY_COLORS",
     "LARGE_NUMBER_SEPERATOR",
-    "WOW_PROJECT_ID",
-    "WOW_PROJECT_CLASSIC",
+    "LE_EXPANSION_CLASSIC",
+    "LE_EXPANSION_BURNING_CRUSADE",
+    "MAX_PLAYER_LEVEL_TABLE",
     "WOW_PROJECT_BURNING_CRUSADE_CLASSIC",
+    "WOW_PROJECT_CLASSIC",
+    "WOW_PROJECT_ID", -- ID of the running WoW project
+    "WOW_PROJECT_MAINLINE", -- Retail WoW
 
     -- Frames
     "GameTooltip",

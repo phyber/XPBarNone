@@ -49,6 +49,15 @@ do
     end
 end
 
+local IsRetail
+do
+    local is_retail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+
+    IsRetail = function()
+        return is_retail
+    end
+end
+
 -- WoW Functions
 local CollapseFactionHeader = CollapseFactionHeader
 local ExpandFactionHeader = ExpandFactionHeader
@@ -71,8 +80,8 @@ local UnitLevel = UnitLevel
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
 
--- Some functions don't exist in Classic. We set these conditionally depending
--- on which client we're running on.
+-- Some functions don't exist outside of Retail. We set these conditionally
+-- depending on which client we're running on.
 local BreakUpLargeNumbers
 local FindActiveAzeriteItem
 local GetAzeriteItemXPInfo
@@ -84,8 +93,11 @@ local HasActiveAzeriteItem
 local IsFactionParagon
 local IsXPUserDisabled
 do
-    -- If we're in either of Classic or Burning Crusade Classic, set these
-    if IsClassic() or IsBurningCrusadeClassic() then
+    -- We use this outside of Retail
+    local MAX_PLAYER_LEVEL_TABLE = MAX_PLAYER_LEVEL_TABLE
+
+    -- If we're outside of Retail, set these
+    if not IsRetail() then
         -- BreakUpLargeNumbers in Classic doesn't do anything. Implement it
         -- ourselves.
         local LARGE_NUMBER_SEPERATOR = LARGE_NUMBER_SEPERATOR
@@ -137,16 +149,21 @@ do
     end
 
     if IsClassic() then
+        local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_CLASSIC]
+
         -- This function doesn't exist in Classic.
         GetMaxLevelForPlayerExpansion = function()
-            return 60
+            return maxLevel
         end
     elseif IsBurningCrusadeClassic() then
+        local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_BURNING_CRUSADE]
+
         -- This function doesn't exist in Burning Crusade Classic.
         GetMaxLevelForPlayerExpansion = function()
-            return 70
+            return maxLevel
         end
     else
+        -- Retail
         BreakUpLargeNumbers = _G.BreakUpLargeNumbers
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
@@ -570,8 +587,8 @@ local function GetOptions(uiTypes, uiName, appName)
             },
         }
 
-        -- Hide guild rep tracking toggle in Classic
-        if not IsClassic() then
+        -- Only show guild rep tracking toggle in Retail
+        if IsRetail() then
             options.args.autotrackguild = {
                 name = L["Auto Track Guild Reputation"],
                 desc = L["Automatically track your guild reputation increases."],
@@ -583,7 +600,7 @@ local function GetOptions(uiTypes, uiName, appName)
         return options
     end
 
-    -- This appName never gets called if we're IsClassic
+    -- This appName never gets called if we're not IsRetail()
     if appName == "XPBarNone-Azer" then
         local options = {
             type = "group",
@@ -702,8 +719,8 @@ local function GetOptions(uiTypes, uiName, appName)
             },
         }
 
-        -- Hide the Azerite Bar colour options in Classic
-        if not IsClassic() then
+        -- Only show the Azerite Bar colour options in Retail
+        if IsRetail() then
             options.args.azerite = {
                 name = L["Azerite Bar"],
                 desc = L["Set the colour of the Azerite Power bar."],
@@ -889,8 +906,8 @@ function XPBarNone:OnInitialize()
     ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-RepMenu", L["Reputation Menu"], myName)
 
-    -- No Azerite Item in Classic, hide the options
-    if not IsClassic() then
+    -- No Azerite Item outside of retail, hide the options
+    if IsRetail() then
         ACRegistry:RegisterOptionsTable("XPBarNone-Azer", GetOptions)
         ACDialog:AddToBlizOptions("XPBarNone-Azer", L["Azerite Bar"], myName)
     end
@@ -915,8 +932,8 @@ function XPBarNone:OnEnable()
         self:CreateXPBar()
     end
 
-    -- Some events don't exist in Classic
-    if not IsClassic() then
+    -- Some events don't exist outside of Retail
+    if IsRetail() then
         -- Azerite Power Event
         self:RegisterEvent("AZERITE_ITEM_EXPERIENCE_CHANGED", "UpdateXPBar")
 
