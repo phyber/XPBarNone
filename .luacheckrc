@@ -64,6 +64,7 @@ read_globals = {
     -- API Functions
     "BreakUpLargeNumbers",
     "C_AzeriteItem",
+    "C_GossipInfo",
     "C_Reputation",
     "ChatEdit_GetActiveWindow",
     "ChatEdit_GetLastActiveWindow",

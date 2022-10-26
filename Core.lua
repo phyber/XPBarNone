@@ -168,7 +168,7 @@ do
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
-        GetFriendshipReputation = _G.GetFriendshipReputation
+        GetFriendshipReputation = C_GossipInfo.GetFriendshipReputation
         GetMaxLevelForPlayerExpansion = _G.GetMaxLevelForPlayerExpansion
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
