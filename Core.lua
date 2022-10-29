@@ -1766,12 +1766,21 @@ function XPBarNone:DrawRepMenu()
         end
 
         if not isHeader then
-            local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
+            local repInfo = GetFriendshipReputation(repID)
             local isFactionParagon = IsFactionParagon(repID)
+
+            -- If a faction isn't a friendship, the friendshipFactionID will
+            -- be 0.
+            local friendID = repInfo.friendshipFactionID
+            local friendRep = repInfo.standing
+            local friendMaxRep = repInfo.maxRep
+            local friendTextLevel = repInfo.text
+            local friendThresh = repInfo.reactionThreshold
+            local friendThreshNext = repInfo.nextThreshold
 
             -- Faction
             local standingText
-            if friendID then
+            if friendID and friendID ~= 0 then
                 standingText = friendTextLevel
                 bottom = 0
                 earned = friendRep - friendThresh
