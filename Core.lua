@@ -50,6 +50,15 @@ do
     end
 end
 
+local IsWrathOfTheLichKing
+do
+    local is_wrath = WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
+
+    IsWrathOfTheLichKing = function()
+        return is_wrath
+    end
+end
+
 local IsRetail
 do
     local is_retail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
@@ -161,6 +170,12 @@ do
         local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_BURNING_CRUSADE]
 
         -- This function doesn't exist in Burning Crusade Classic.
+        GetMaxLevelForPlayerExpansion = function()
+            return maxLevel
+        end
+    elseif IsWrathOfTheLichKing() then
+        local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_WRATH_OF_THE_LICH_KING]
+
         GetMaxLevelForPlayerExpansion = function()
             return maxLevel
         end
