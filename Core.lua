@@ -14,7 +14,6 @@ local select = select
 local tonumber = tonumber
 local tostring = tostring
 local type = type
-local unpack = unpack
 
 -- Maths
 local math_ceil = math.ceil
@@ -199,19 +198,17 @@ do
         GetFriendshipReputation = function(repID)
             local repInfo = realGetFriendshipReputation(repID)
 
-            -- Table of values in the order we need them, with the name we
+            -- Values in the order we need them, with the name we
             -- refer to them by later on.
-            return unpack({
-                repInfo.friendshipFactionID, -- friendID
-                repInfo.standing,            -- friendRep
-                repInfo.maxRep,              -- friendMaxRep
-                repInfo.name,                -- friendName
-                nil,                         -- IGNORED
-                nil,                         -- IGNORED
-                repInfo.text,                -- friendTextLevel
-                repInfo.reactionThreshold,   -- friendThresh
-                repInfo.nextThreshold,       -- friendThreshNext
-            })
+            return repInfo.friendshipFactionID, -- friendID
+                   repInfo.standing,            -- friendRep
+                   repInfo.maxRep,              -- friendMaxRep
+                   repInfo.name,                -- friendName
+                   nil,                         -- IGNORED
+                   nil,                         -- IGNORED
+                   repInfo.text,                -- friendTextLevel
+                   repInfo.reactionThreshold,   -- friendThresh
+                   repInfo.nextThreshold       -- friendThreshNext
         end
     end
 end
