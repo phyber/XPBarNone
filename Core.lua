@@ -14,6 +14,7 @@ local select = select
 local tonumber = tonumber
 local tostring = tostring
 local type = type
+local unpack = unpack
 
 -- Maths
 local math_ceil = math.ceil
@@ -92,6 +93,7 @@ local GetPowerLevel
 local HasActiveAzeriteItem
 local IsFactionParagon
 local IsXPUserDisabled
+
 do
     -- We use this outside of Retail
     local MAX_PLAYER_LEVEL_TABLE = MAX_PLAYER_LEVEL_TABLE
@@ -168,12 +170,34 @@ do
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
-        GetFriendshipReputation = C_GossipInfo.GetFriendshipReputation
         GetMaxLevelForPlayerExpansion = _G.GetMaxLevelForPlayerExpansion
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
         IsFactionParagon = C_Reputation.IsFactionParagon
         IsXPUserDisabled = _G.IsXPUserDisabled
+
+        -- This function was changed in Dragonflight to return a table of
+        -- information.
+        -- Emulate the old function so we don't have to change our table
+        -- drawing.
+        local realGetFriendshipReputation = C_GossipInfo.GetFriendshipReputation
+        GetFriendshipReputation = function(repID)
+            local repInfo = realGetFriendshipReputation(repID)
+
+            -- Table of values in the order we need them, with the name we
+            -- refer to them by later on.
+            return unpack({
+                repInfo.friendshipFactionID, -- friendID
+                repInfo.standing,            -- friendRep
+                repInfo.maxRep,              -- friendMaxRep
+                repInfo.name,                -- friendName
+                nil,                         -- IGNORED
+                nil,                         -- IGNORED
+                repInfo.text,                -- friendTextLevel
+                repInfo.reactionThreshold,   -- friendThresh
+                repInfo.nextThreshold,       -- friendThreshNext
+            })
+        end
     end
 end
 
@@ -1766,20 +1790,14 @@ function XPBarNone:DrawRepMenu()
         end
 
         if not isHeader then
-            local repInfo = GetFriendshipReputation(repID)
+            local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, friendThreshNext = GetFriendshipReputation(repID)
             local isFactionParagon = IsFactionParagon(repID)
-
-            -- If a faction isn't a friendship, the friendshipFactionID will
-            -- be 0.
-            local friendID = repInfo.friendshipFactionID
-            local friendRep = repInfo.standing
-            local friendMaxRep = repInfo.maxRep
-            local friendTextLevel = repInfo.text
-            local friendThresh = repInfo.reactionThreshold
-            local friendThreshNext = repInfo.nextThreshold
 
             -- Faction
             local standingText
+
+            -- If a faction isn't a friendship, the friendshipFactionID will
+            -- be 0 in Retail.
             if friendID and friendID ~= 0 then
                 standingText = friendTextLevel
                 bottom = 0
