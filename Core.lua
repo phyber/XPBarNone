@@ -1218,7 +1218,7 @@ local function GetRepText(repName, repStanding, repMin, repMax, repValue, friend
     local text = db.rep.repstring
 
     local standingText
-    if friendID then
+    if friendID and friendID ~= 0 then
         standingText = friendTextLevel
     else
         -- Add a + next to the standing for bonus or paragon reps.
@@ -1522,7 +1522,7 @@ function XPBarNone:UpdateRepData()
     local _, hasBonusRep, canBeLFGBonus
     local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
 
-    if friendID then
+    if friendID and friendID ~= 0 then
         if nextFriendThresh then
             -- Not yet "Exalted" with friend, use provided max for current
             -- level.
