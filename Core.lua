@@ -206,9 +206,9 @@ do
                    repInfo.name,                -- friendName
                    nil,                         -- IGNORED
                    nil,                         -- IGNORED
-                   repInfo.text,                -- friendTextLevel
+                   repInfo.reaction,            -- friendTextLevel
                    repInfo.reactionThreshold,   -- friendThresh
-                   repInfo.nextThreshold       -- friendThreshNext
+                   repInfo.nextThreshold        -- friendThreshNext
         end
     end
 end
