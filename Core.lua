@@ -96,10 +96,13 @@ local FindActiveAzeriteItem
 local GetAzeriteItemXPInfo
 local GetFactionParagonInfo
 local GetFriendshipReputation
+local GetMajorFactionData
 local GetMaxLevelForPlayerExpansion
 local GetPowerLevel
 local HasActiveAzeriteItem
+local HasMaximumRenown
 local IsFactionParagon
+local IsMajorFaction
 local IsXPUserDisabled
 
 do
@@ -152,6 +155,11 @@ do
             return false
         end
 
+        -- C_Reputation.IsMajorFaction only exists on Retail
+        IsMajorFaction = function()
+            return false
+        end
+
         -- Users cannot disable XP gain in Classic.
         IsXPUserDisabled = function()
             return false
@@ -184,10 +192,13 @@ do
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
+        GetMajorFactionData = C_MajorFactions.GetMajorFactionData
         GetMaxLevelForPlayerExpansion = _G.GetMaxLevelForPlayerExpansion
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
+        HasMaximumRenown = C_MajorFactions.HasMaximumRenown
         IsFactionParagon = C_Reputation.IsFactionParagon
+        IsMajorFaction = C_Reputation.IsMajorFaction
         IsXPUserDisabled = _G.IsXPUserDisabled
 
         -- This function was changed in Dragonflight to return a table of
@@ -215,10 +226,12 @@ end
 
 -- WoW constants
 local BACKGROUND = BACKGROUND
+local BLUE_FONT_COLOR = BLUE_FONT_COLOR
 local FACTION_ALLIANCE = FACTION_ALLIANCE
 local FACTION_BAR_COLORS = FACTION_BAR_COLORS
 local FACTION_HORDE = FACTION_HORDE
 local GUILD = GUILD
+local RENOWN_LEVEL_LABEL = RENOWN_LEVEL_LABEL
 
 -- We need to know the HoA itemID sometimes
 local HEARTOFAZEROTH_ITEMID = 158075
@@ -1214,11 +1227,11 @@ end
 
 -- GetRepText
 -- Returns the text for the reputation bar after substituting the various tokens
-local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus, isFactionParagon)
+local function GetRepText(repName, repStanding, repMin, repMax, repValue, friendID, friendTextLevel, hasBonusRep, canBeLFGBonus, isFactionParagon, isMajorFaction)
     local text = db.rep.repstring
 
     local standingText
-    if friendID and friendID ~= 0 then
+    if (friendID and friendID ~= 0) or isMajorFaction then
         standingText = friendTextLevel
     else
         -- Add a + next to the standing for bonus or paragon reps.
@@ -1521,8 +1534,10 @@ function XPBarNone:UpdateRepData()
     -- friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold
     local _, hasBonusRep, canBeLFGBonus
     local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
+    local isMajorFaction = IsMajorFaction(factionID)
 
     if friendID and friendID ~= 0 then
+        -- Friendship
         if nextFriendThresh then
             -- Not yet "Exalted" with friend, use provided max for current
             -- level.
@@ -1533,9 +1548,20 @@ function XPBarNone:UpdateRepData()
             repMax = friendMaxRep + 1
             repValue = 1
         end
+
         repMax = repMax - friendThresh
         repMin = 0
+    elseif isMajorFaction then
+        -- Renown
+        local data = GetMajorFactionData(factionID)
+        local isCapped = HasMaximumRenown(factionID)
+
+        repMin = 0
+        repMax = data.renownLevelThreshold
+        repValue = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
+        friendTextLevel = RENOWN_LEVEL_LABEL .. data.renownLevel
     else
+        -- Regular old Reputation
         -- name, description, standingID, barMin, barMax, barValue, atWarWith,
         -- canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild,
         -- factionID, hasBonusRepGain, canBeLFGBonus
@@ -1574,10 +1600,14 @@ function XPBarNone:UpdateRepData()
 
     -- Use our own colour for exalted.
     local repColour
-    if repStanding == STANDING_EXALTED then
-        repColour = db.colours.exalted
+    if isMajorFaction then
+        repColour = BLUE_FONT_COLOR
     else
-        repColour = FACTION_BAR_COLORS[repStanding]
+        if repStanding == STANDING_EXALTED then
+            repColour = db.colours.exalted
+        else
+            repColour = FACTION_BAR_COLORS[repStanding]
+        end
     end
 
     self.frame.xpbar:SetStatusBarColor(repColour.r, repColour.g, repColour.b, repColour.a)
@@ -1594,7 +1624,8 @@ function XPBarNone:UpdateRepData()
                 friendTextLevel,
                 hasBonusRep,
                 canBeLFGBonus,
-                isFactionParagon
+                isFactionParagon,
+                isMajorFaction
             )
         )
     else
@@ -1792,6 +1823,7 @@ function XPBarNone:DrawRepMenu()
         -- factionID, hasBonusRepGain, canBeLFGBonus
         -- = GetFactionInfo(factionIndex);
         local name,_,standing,bottom,top,earned,atWar,_,isHeader,isCollapsed,hasRep,isWatched,isChild,repID,hasBonusRep,canBeLFGBonus = GetFactionInfo(faction)
+        local isMajorFaction = repID and IsMajorFaction(repID)
 
         -- Set these to previous max values for exalted. Legion changed how
         -- exalted works.
@@ -1825,6 +1857,15 @@ function XPBarNone:DrawRepMenu()
                 end
 
                 top = top - friendThresh
+            elseif isMajorFaction then
+                -- Renown
+                local data = GetMajorFactionData(repID)
+                local isCapped = HasMaximumRenown(repID)
+
+                bottom = 0
+                top = data.renownLevelThreshold
+                earned = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
+                standingText = RENOWN_LEVEL_LABEL .. data.renownLevel
             else
                 if hasBonusRep or isFactionParagon then
                     standingText = ("%s+"):format(factionStandingLabel[standing])
@@ -1841,6 +1882,18 @@ function XPBarNone:DrawRepMenu()
                 earned = parValue % parThresh
             end
 
+            local repColour
+            if isMajorFaction then
+                -- MajorFactions always use the same colour
+                repColour = ("%02x%02x%02x"):format(
+                    BLUE_FONT_COLOR.r * 255,
+                    BLUE_FONT_COLOR.g * 255,
+                    BLUE_FONT_COLOR.b * 255
+                )
+            else
+                repColour = repHexColour[standing]
+            end
+
             -- Legion introduced a bug where you can be shown a
             -- completely blank rep, so only add menu entries for
             -- things with a name.
@@ -1849,7 +1902,7 @@ function XPBarNone:DrawRepMenu()
 
                 linenum = tooltip:AddLine(nil)
                 tooltip:SetCell(linenum, 1, isWatched and checkIcon or " ", NormalFont)
-                tooltip:SetCell(linenum, 2, ("|cff%s%s (%s)|r"):format(repHexColour[standing], name, standingText), GameTooltipTextSmall)
+                tooltip:SetCell(linenum, 2, ("|cff%s%s (%s)|r"):format(repColour, name, standingText), GameTooltipTextSmall)
                 tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.SetWatchedFactionIndex, faction)
                 tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
                 tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
@@ -1873,10 +1926,22 @@ function XPBarNone:DrawRepMenu()
             -- and fix the tooltip.
             if hasRep then
                 local standingText
-                if hasBonusRep then
-                    standingText = ("%s+"):format(factionStandingLabel[standing])
+                if isMajorFaction then
+                    -- Major Faction
+                    local data = GetMajorFactionData(repID)
+                    local isCapped = HasMaximumRenown(repID)
+
+                    bottom = 0
+                    top = data.renownLevelThreshold
+                    earned = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
+                    standingText = RENOWN_LEVEL_LABEL .. data.renownLevel
                 else
-                    standingText = factionStandingLabel[standing]
+                    -- Regular reputation
+                    if hasBonusRep then
+                        standingText = ("%s+"):format(factionStandingLabel[standing])
+                    else
+                        standingText = factionStandingLabel[standing]
+                    end
                 end
 
                 tooltip:SetCell(linenum, 2, ("%s (%s)"):format(name, standingText), NormalFont)
@@ -1888,6 +1953,7 @@ function XPBarNone:DrawRepMenu()
             else
                 tooltip:SetCell(linenum, 2, name, NormalFont)
             end
+
             tooltip:SetLineScript(linenum, "OnMouseUp", XPBarNone.ToggleCollapse, {tooltip,faction,name,hasRep,isCollapsed})
             tooltip:SetLineScript(linenum, "OnEnter", XPBarNone.SetTooltip, {name,tipText})
             tooltip:SetLineScript(linenum, "OnLeave", XPBarNone.HideTooltip)
