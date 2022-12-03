@@ -65,6 +65,7 @@ read_globals = {
     "BreakUpLargeNumbers",
     "C_AzeriteItem",
     "C_GossipInfo",
+    "C_MajorFactions",
     "C_Reputation",
     "ChatEdit_GetActiveWindow",
     "ChatEdit_GetLastActiveWindow",
@@ -103,6 +104,7 @@ read_globals = {
 
     -- FrameXML Globals
     "BACKGROUND",
+    "BLUE_FONT_COLOR",
     "Enum",
     "FACTION_ALLIANCE",
     "FACTION_BAR_COLORS",
@@ -114,6 +116,7 @@ read_globals = {
     "LE_EXPANSION_BURNING_CRUSADE",
     "LE_EXPANSION_WRATH_OF_THE_LICH_KING",
     "MAX_PLAYER_LEVEL_TABLE",
+    "RENOWN_LEVEL_LABEL",
     "WOW_PROJECT_BURNING_CRUSADE_CLASSIC",
     "WOW_PROJECT_CLASSIC",
     "WOW_PROJECT_ID", -- ID of the running WoW project
