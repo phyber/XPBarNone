@@ -82,9 +82,6 @@ local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local GetGuildInfo = GetGuildInfo
 local GetInventoryItemID = GetInventoryItemID
 local GetItemInfo = GetItemInfo
-local GetNumFactions = GetNumFactions
-local GetFactionInfo = GetFactionInfo
-local GetFactionInfoByID = GetFactionInfoByID
 local GetMouseButtonClicked = GetMouseButtonClicked
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
@@ -109,6 +106,7 @@ local GetMajorFactionData
 local GetMaxLevelForPlayerExpansion
 local GetNumFactions
 local GetPowerLevel
+local GetWatchedFactionData
 local GetWatchedFactionInfo
 local HasActiveAzeriteItem
 local HasMaximumRenown
@@ -203,7 +201,7 @@ do
     elseif IsCataclysm() then
         local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_CATACLYSM]
 
-        GetMaxPlayerLevelForExpansion = function()
+        GetMaxLevelForPlayerExpansion = function()
             return maxLevel
         end
     elseif IsWrathOfTheLichKing() then
