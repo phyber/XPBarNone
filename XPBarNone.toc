@@ -1,7 +1,8 @@
-## Interface: 100002
-## Interface-Retail: 100002
-## Interface-Classic: 11403
+## Interface: 110000
 ## Interface-BCC: 20504
+## Interface-Cata: 40400
+## Interface-Classic: 11503
+## Interface-Retail: 110000
 ## Title: XPBarNone
 ## Author: phyber
 ## Notes: XP bar using Ace3.

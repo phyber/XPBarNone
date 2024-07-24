@@ -49,6 +49,15 @@ do
     end
 end
 
+local IsCataclysm
+do
+    local is_cataclysm = WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC
+
+    IsCataclysm = function ()
+        return is_cataclysm
+    end
+end
+
 local IsWrathOfTheLichKing
 do
     local is_wrath = WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
@@ -68,8 +77,6 @@ do
 end
 
 -- WoW Functions
-local CollapseFactionHeader = CollapseFactionHeader
-local ExpandFactionHeader = ExpandFactionHeader
 local GetContainerItemInfo = GetContainerItemInfo
 local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local GetGuildInfo = GetGuildInfo
@@ -79,12 +86,10 @@ local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local GetFactionInfoByID = GetFactionInfoByID
 local GetMouseButtonClicked = GetMouseButtonClicked
-local GetWatchedFactionInfo = GetWatchedFactionInfo
 local GetXPExhaustion = GetXPExhaustion
 local IsControlKeyDown = IsControlKeyDown
 local IsResting = IsResting
 local IsShiftKeyDown = IsShiftKeyDown
-local SetWatchedFactionIndex = SetWatchedFactionIndex
 local UnitLevel = UnitLevel
 local UnitXP = UnitXP
 local UnitXPMax = UnitXPMax
@@ -92,18 +97,25 @@ local UnitXPMax = UnitXPMax
 -- Some functions don't exist outside of Retail. We set these conditionally
 -- depending on which client we're running on.
 local BreakUpLargeNumbers
+local CollapseFactionHeader
+local ExpandFactionHeader
 local FindActiveAzeriteItem
 local GetAzeriteItemXPInfo
+local GetFactionInfo
+local GetFactionInfoByID
 local GetFactionParagonInfo
 local GetFriendshipReputation
 local GetMajorFactionData
 local GetMaxLevelForPlayerExpansion
+local GetNumFactions
 local GetPowerLevel
+local GetWatchedFactionInfo
 local HasActiveAzeriteItem
 local HasMaximumRenown
 local IsFactionParagon
 local IsMajorFaction
 local IsXPUserDisabled
+local SetWatchedFactionIndex
 
 do
     -- We use this outside of Retail
@@ -114,6 +126,14 @@ do
         -- BreakUpLargeNumbers in Classic doesn't do anything. Implement it
         -- ourselves.
         local LARGE_NUMBER_SEPERATOR = LARGE_NUMBER_SEPERATOR
+
+        CollapseFactionHeader = _G.CollapseFactionHeader
+        ExpandFactionHeader = _G.ExpandFactionHeader
+        GetFactionInfo = _G.GetFactionInfo
+        GetFactionInfoByID = _G.GetFactionInfoByID
+        GetNumFactions = _G.GetNumFactions
+        GetWatchedFactionInfo = _G.GetWatchedFactionInfo
+        SetWatchedFactionIndex = _G.SetWatchedFactionIndex
 
         BreakUpLargeNumbers = function(num)
             local str = ""
@@ -180,6 +200,12 @@ do
         GetMaxLevelForPlayerExpansion = function()
             return maxLevel
         end
+    elseif IsCataclysm() then
+        local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_CATACLYSM]
+
+        GetMaxPlayerLevelForExpansion = function()
+            return maxLevel
+        end
     elseif IsWrathOfTheLichKing() then
         local maxLevel = MAX_PLAYER_LEVEL_TABLE[LE_EXPANSION_WRATH_OF_THE_LICH_KING]
 
@@ -189,17 +215,22 @@ do
     else
         -- Retail
         BreakUpLargeNumbers = _G.BreakUpLargeNumbers
+        CollapseFactionHeader = C_Reputation.CollapseFactionHeader
+        ExpandFactionHeader = C_Reputation.ExpandFactionHeader
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
         GetMajorFactionData = C_MajorFactions.GetMajorFactionData
         GetMaxLevelForPlayerExpansion = _G.GetMaxLevelForPlayerExpansion
+        GetNumFactions = C_Reputation.GetNumFactions
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
+        GetWatchedFactionData = C_Reputation.GetWatchedFactionData
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
         HasMaximumRenown = C_MajorFactions.HasMaximumRenown
         IsFactionParagon = C_Reputation.IsFactionParagon
         IsMajorFaction = C_Reputation.IsMajorFaction
         IsXPUserDisabled = _G.IsXPUserDisabled
+        SetWatchedFactionIndex = C_Reputation.SetWatchedFactionByIndex
 
         -- This function was changed in Dragonflight to return a table of
         -- information.
@@ -220,6 +251,64 @@ do
                    repInfo.reaction,            -- friendTextLevel
                    repInfo.reactionThreshold,   -- friendThresh
                    repInfo.nextThreshold        -- friendThreshNext
+        end
+
+        GetFactionInfo = function(index)
+            local data = C_Reputation.GetFactionDataByIndex(index)
+
+            return data.name,                     -- name
+                   data.description,              -- description
+                   data.reaction,                 -- standingId
+                   data.currentReactionThreshold, -- barMin
+                   data.nextReactionThreshold,    -- barMax
+                   data.currentStanding,          -- barValue
+                   data.atWarWith,                -- atWarWith
+                   data.canToggleAtWar,           -- canToggleAtWar
+                   data.isHeader,                 -- isHeader
+                   data.isCollapsed,              -- isCollapsed
+                   data.isHeaderWithRep,          -- isHeaderWithRep
+                   data.isWatched,                -- isWatched
+                   data.isChild,                  -- isChild
+                   data.factionID,                -- factionID
+                   data.hasBonusRepGain,          -- hasBonusRepGain
+                   nil                            -- canBeLFGBonus
+        end
+
+        GetFactionInfoByID = function(factionId)
+            local data = C_Reputation.GetFactionDataByID(factionId)
+
+            return data.name,
+                   data.description,
+                   data.reaction,
+                   data.currentReactionThreshold,
+                   data.nextReactionThreshold,
+                   data.currentStanding,
+                   data.atWarWith,
+                   data.canToggleAtWar,
+                   data.isHeader,
+                   data.isCollapsed,
+                   data.isHeaderWithRep,
+                   data.isWatched,
+                   data.isChild,
+                   data.factionID,
+                   data.hasBonusRepGain,
+                   data.canSetInactive
+        end
+
+        GetWatchedFactionInfo = function()
+            -- Old function returned:
+            --   name, standing, min, max, value, factionID
+            local data = C_Reputation.GetWatchedFactionData()
+
+            -- We just extract the necessary bits to emulate the old call for
+            -- now.
+            -- Return them in the same order as before
+            return data.name,                     -- name
+                   data.reaction,                 -- standing
+                   data.currentReactionThreshold, -- min
+                   data.nextReactionThreshold,    -- max
+                   data.currentStanding,          -- value
+                   data.factionID                 -- factionId
         end
     end
 end
@@ -1557,9 +1646,16 @@ function XPBarNone:UpdateRepData()
         local isCapped = HasMaximumRenown(factionID)
 
         repMin = 0
-        repMax = data.renownLevelThreshold
-        repValue = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
         friendTextLevel = RENOWN_LEVEL_LABEL .. data.renownLevel
+
+        if isFactionParagon then
+            local parValue, parThresh, _, _ = GetFactionParagonInfo(factionID)
+            repMax = parThresh
+            repValue = parValue % parThresh
+        else
+            repMax = data.renownLevelThreshold
+            repValue = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
+        end
     else
         -- Regular old Reputation
         -- name, description, standingID, barMin, barMax, barValue, atWarWith,
