@@ -106,7 +106,6 @@ local GetMajorFactionData
 local GetMaxLevelForPlayerExpansion
 local GetNumFactions
 local GetPowerLevel
-local GetWatchedFactionData
 local GetWatchedFactionInfo
 local HasActiveAzeriteItem
 local HasMaximumRenown
@@ -222,7 +221,6 @@ do
         GetMaxLevelForPlayerExpansion = _G.GetMaxLevelForPlayerExpansion
         GetNumFactions = C_Reputation.GetNumFactions
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
-        GetWatchedFactionData = C_Reputation.GetWatchedFactionData
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
         HasMaximumRenown = C_MajorFactions.HasMaximumRenown
         IsFactionParagon = C_Reputation.IsFactionParagon
