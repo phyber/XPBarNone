@@ -295,6 +295,7 @@ do
             -- Old function returned:
             --   name, standing, min, max, value, factionID
             local data = C_Reputation.GetWatchedFactionData()
+            if not data then return nil end -- There's no faction being watched.
 
             -- We just extract the necessary bits to emulate the old call for
             -- now.
@@ -1601,7 +1602,7 @@ function XPBarNone:UpdateRepData()
     end
 
     local repName, repStanding, repMin, repMax, repValue, factionID = GetWatchedFactionInfo()
-    local isFactionParagon = IsFactionParagon(factionID)
+    local isFactionParagon = factionID and IsFactionParagon(factionID)
 
     -- Set the colour of the bar text.
     local txtcol = db.colours.reptext
