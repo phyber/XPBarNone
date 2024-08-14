@@ -61,12 +61,15 @@ read_globals = {
     -- Lua globals
     "_G",
 
-    -- API Functions
-    "BreakUpLargeNumbers",
+    -- C modules
+    "C_AddOns",
     "C_AzeriteItem",
     "C_GossipInfo",
     "C_MajorFactions",
     "C_Reputation",
+
+    -- API Functions
+    "BreakUpLargeNumbers",
     "ChatEdit_GetActiveWindow",
     "ChatEdit_GetLastActiveWindow",
     "CollapseFactionHeader",
@@ -127,6 +130,7 @@ read_globals = {
 
     -- Frames
     "GameTooltip",
+    "Settings",
     "UIParent",
     "WorldFrame",
 
