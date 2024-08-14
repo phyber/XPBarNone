@@ -21,6 +21,10 @@ local math_floor = math.floor
 local math_huge = math.huge
 local math_min = math.min
 
+-- Filled in during OnInitialize, used to open the options from our slash
+-- command or clicking the XP bar.
+local addonOptionsFrameName
+
 -- We need to know if we're in the Classic client at multiple points throughout
 -- the addon to decide which version of a function to use.
 -- This detection is incredibly brittle, but Blizzard has decided not to give
@@ -97,6 +101,7 @@ local BreakUpLargeNumbers
 local CollapseFactionHeader
 local ExpandFactionHeader
 local FindActiveAzeriteItem
+local GetAddOnMetadata
 local GetAzeriteItemXPInfo
 local GetFactionInfo
 local GetFactionInfoByID
@@ -109,6 +114,7 @@ local GetPowerLevel
 local GetWatchedFactionInfo
 local HasActiveAzeriteItem
 local HasMaximumRenown
+local IsAddOnLoaded
 local IsFactionParagon
 local IsMajorFaction
 local IsXPUserDisabled
@@ -126,10 +132,12 @@ do
 
         CollapseFactionHeader = _G.CollapseFactionHeader
         ExpandFactionHeader = _G.ExpandFactionHeader
+        GetAddOnMetadata = _G.GetAddOnMetadata
         GetFactionInfo = _G.GetFactionInfo
         GetFactionInfoByID = _G.GetFactionInfoByID
         GetNumFactions = _G.GetNumFactions
         GetWatchedFactionInfo = _G.GetWatchedFactionInfo
+        IsAddOnLoaded = _G.IsAddOnLoaded
         SetWatchedFactionIndex = _G.SetWatchedFactionIndex
 
         BreakUpLargeNumbers = function(num)
@@ -215,6 +223,7 @@ do
         CollapseFactionHeader = C_Reputation.CollapseFactionHeader
         ExpandFactionHeader = C_Reputation.ExpandFactionHeader
         FindActiveAzeriteItem = C_AzeriteItem.FindActiveAzeriteItem
+        GetAddOnMetadata = C_AddOns.GetAddOnMetadata
         GetAzeriteItemXPInfo = C_AzeriteItem.GetAzeriteItemXPInfo
         GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
         GetMajorFactionData = C_MajorFactions.GetMajorFactionData
@@ -223,6 +232,7 @@ do
         GetPowerLevel = C_AzeriteItem.GetPowerLevel
         HasActiveAzeriteItem = C_AzeriteItem.HasActiveAzeriteItem
         HasMaximumRenown = C_MajorFactions.HasMaximumRenown
+        IsAddOnLoaded = C_AddOns.IsAddOnLoaded
         IsFactionParagon = C_Reputation.IsFactionParagon
         IsMajorFaction = C_Reputation.IsMajorFaction
         IsXPUserDisabled = _G.IsXPUserDisabled
@@ -902,6 +912,15 @@ local function GetOptions(uiTypes, uiName, appName)
     end
 end
 
+-- Open the options dialog using the appropriate method for Retail vs. !Retail.
+local function OpenOptions()
+    if Settings and Settings.OpenToCategory then
+        Settings.OpenToCategory(addonOptionsFrameName)
+    else
+        InterfaceOptionsFrame_OpenToCategory(addonOptionsFrameName)
+    end
+end
+
 -- Set the font for the bar text
 function XPBarNone:SetFontOptions()
     local font, size, flags
@@ -983,11 +1002,7 @@ end
 
 -- Toggle between rep and xp bar.
 function XPBarNone:ToggleShowReputation()
-    if db.rep.showrepbar then
-        db.rep.showrepbar = false
-    else
-        db.rep.showrepbar = true
-    end
+    db.rep.showrepbar = not db.rep.showrepbar
     self:UpdateXPBar()
 end
 
@@ -1034,7 +1049,15 @@ function XPBarNone:OnInitialize()
 
     ACRegistry:RegisterOptionsTable("XPBarNone-Colours", GetOptions)
     ACRegistry:RegisterOptionsTable("XPBarNone-RepMenu", GetOptions)
-    ACDialog:AddToBlizOptions("XPBarNone-General", myName)
+
+    -- Capture the frame from the first ACDialog, we need this later to open
+    -- the options frame.
+    local _
+    _, addonOptionsFrameName = ACDialog:AddToBlizOptions(
+        "XPBarNone-General",
+        myName
+    )
+
     ACDialog:AddToBlizOptions("XPBarNone-XP", L["XP Bar"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-Rep", L["Reputation Bar"], myName)
     ACDialog:AddToBlizOptions("XPBarNone-Colours", L["Bar Colours"], myName)
@@ -1047,7 +1070,7 @@ function XPBarNone:OnInitialize()
     end
 
     -- Register a chat command to open options
-    self:RegisterChatCommand("xpbn", function() InterfaceOptionsFrame_OpenToCategory(myName) end)
+    self:RegisterChatCommand("xpbn", OpenOptions)
 
     -- Profiles
     local popts = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
@@ -1426,9 +1449,7 @@ function XPBarNone:CreateXPBar()
 
         -- Display options on Shift-RightClick
         if IsShiftKeyDown() and button == "RightButton" then
-            InterfaceOptionsFrame_OpenToCategory(
-                GetAddOnMetadata("XPBarNone", "Title")
-            )
+            OpenOptions()
         end
 
         -- Display Reputation menu on Ctrl-RightClick
