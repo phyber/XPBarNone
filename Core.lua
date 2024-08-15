@@ -305,6 +305,9 @@ do
             -- Old function returned:
             --   name, standing, min, max, value, factionID
             local data = C_Reputation.GetWatchedFactionData()
+            if not data then
+                return nil
+            end
 
             -- We just extract the necessary bits to emulate the old call for
             -- now.
@@ -1622,7 +1625,6 @@ function XPBarNone:UpdateRepData()
     end
 
     local repName, repStanding, repMin, repMax, repValue, factionID = GetWatchedFactionInfo()
-    local isFactionParagon = IsFactionParagon(factionID)
 
     -- Set the colour of the bar text.
     local txtcol = db.colours.reptext
@@ -1632,7 +1634,9 @@ function XPBarNone:UpdateRepData()
         if self.frame.xpbar:IsVisible() then
             self.frame.xpbar:Hide()
         end
+
         self.frame.bartext:SetText(L["You need to select a faction to watch."])
+
         return
     end
 
@@ -1640,6 +1644,7 @@ function XPBarNone:UpdateRepData()
     -- friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold
     local _, hasBonusRep, canBeLFGBonus
     local friendID, friendRep, friendMaxRep, friendName, _, _, friendTextLevel, friendThresh, nextFriendThresh = GetFriendshipReputation(factionID)
+    local isFactionParagon = IsFactionParagon(factionID)
     local isMajorFaction = IsMajorFaction(factionID)
 
     if friendID and friendID ~= 0 then
