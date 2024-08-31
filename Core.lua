@@ -261,6 +261,9 @@ do
 
         GetFactionInfo = function(index)
             local data = C_Reputation.GetFactionDataByIndex(index)
+            if not data then
+                return nil
+            end
 
             return data.name,                     -- name
                    data.description,              -- description
