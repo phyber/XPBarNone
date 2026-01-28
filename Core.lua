@@ -1671,7 +1671,7 @@ function XPBarNone:UpdateRepData()
         local isCapped = HasMaximumRenown(factionID)
 
         repMin = 0
-        friendTextLevel = RENOWN_LEVEL_LABEL .. data.renownLevel
+        friendTextLevel = RENOWN_LEVEL_LABEL:format(data.renownLevel)
 
         if isFactionParagon then
             local parValue, parThresh, _, _ = GetFactionParagonInfo(factionID)
@@ -1986,7 +1986,7 @@ function XPBarNone:DrawRepMenu()
                 bottom = 0
                 top = data.renownLevelThreshold
                 earned = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
-                standingText = RENOWN_LEVEL_LABEL .. data.renownLevel
+                standingText = RENOWN_LEVEL_LABEL:format(data.renownLevel)
             else
                 if hasBonusRep or isFactionParagon then
                     standingText = ("%s+"):format(factionStandingLabel[standing])
@@ -2055,7 +2055,7 @@ function XPBarNone:DrawRepMenu()
                     bottom = 0
                     top = data.renownLevelThreshold
                     earned = isCapped and data.renownLevelThreshold or data.renownReputationEarned or 0
-                    standingText = RENOWN_LEVEL_LABEL .. data.renownLevel
+                    standingText = RENOWN_LEVEL_LABEL:format(data.renownLevel)
                 else
                     -- Regular reputation
                     if hasBonusRep then
